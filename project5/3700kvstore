@@ -1,6 +1,54 @@
 #!/usr/bin/env python3
 
-import sys, socket, select, time, json, random
+import sys, socket, select, time, json, random, queue
+
+def dump(thing, sock):
+  sock.send(json.dumps(thing).encode())
+
+def load(thing):
+  return json.loads(thing.decode('utf-8'))
+
+def debug(sent, mid, type, src):
+  print('%s msg: %s with type: %s for %s' % (sent, mid, type, src))
+
+class Follower:
+  def __init__(self, id, replicas, sock):
+    self.leader = None
+    self.id = id
+    self.term = 0
+    self.replicas = replicas
+    self.sock = sock
+    self.n = 1 + len(replicas)
+    self.queue = queue.Queue()
+
+  def handle_msg(self, msg):
+    debug('received', msg['MID'], msg['type'], msg['src'])
+    if msg['type'] == 'get' or msg['type'] == 'put':
+      self.handle_client(msg)
+    else:
+      pass
+
+  def format(self, src, dst, leader, type, mid):
+    return {'src': src, 'dst': dst, 'leader': leader, 'type': type, 'MID': mid}
+
+  def handle_client(self, msg):
+    self.queue.put(msg):
+    while leader is not None and not self.queue.empty():
+      msg = self.queue.get()
+      src = msg['src']
+      mid = msg['MID']
+      dump(self.format(self.id, src, self.leader, 'redirect', mid), self.sock)
+      debug('sent', mid, 'redirect', src)
+
+class Leader:
+  def __init__(self, candidate):
+    self.leader = candidate.id
+    self.id = candidate.id
+    self.term = candidate.term
+    self.replicas = candidate.replicas
+    self.sock = candidate.sock
+    self.n = candidate.n
+    self.queue = candidate.queue
 
 # Your ID number
 my_id = sys.argv[1]
@@ -14,29 +62,18 @@ sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
 sock.connect(my_id)
 
 last = 0
+shard = Follower(my_id, replica_ids, sock)
 
 while True:
-	ready = select.select([sock], [], [], 0.1)[0]
-	
-	if sock in ready:
-		msg_raw = sock.recv(32768)
+  ready = select.select([shard.sock], [], [], 0.1)[0]
+
+  if shard.sock in ready:
+    msg_raw = shard.sock.recv(32768)
 		
-		if len(msg_raw) == 0: continue
-		msg = json.loads(msg_raw)
+    if len(msg_raw) > 0:
+      msg = load(msg_raw)
+      shard.handle_msg(msg)
 		
-		# For now, ignore get() and put() from clients
-		if msg['type'] in ['get', 'put']:
-                        pass
-		
-		# Handle noop messages. This may be removed from your final implementation
-		elif msg['type'] == 'noop':
-			print '%s received a NOOP from %s' % (msg['dst'], msg['src'])
-		
-	clock = time.time()
-	if clock-last > 2:
-		# Send a no-op message to a random peer every two seconds, just for fun
-		# You definitely want to remove this from your implementation
-		msg = {'src': my_id, 'dst': random.choice(replica_ids), 'leader': 'FFFF', 'type': 'noop'}
-		sock.send(json.dumps(msg))
-		print '%s sending a NOOP to %s' % (msg['src'], msg['dst'])
-		last = clock
+  clock = time.time()
+  if clock-last > 2:
+    last = clock
