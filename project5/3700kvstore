@@ -50,6 +50,10 @@ def candidate_from_follower(follower):
   """
   candidate = Candidate(follower.id, follower.replicas, follower.sock, follower.term + 1)
   candidate.queue = follower.queue
+  candidate.log = follower.log
+  candidate.data = follower.data
+  candidate.commitIndex = follower.commitIndex
+  candidate.lastApplied = follower.lastApplied
   return candidate
 
 
@@ -78,6 +82,10 @@ class Follower:
     self.sock = candidate.sock
     self.n = 1 + len(candidate.replicas)
     self.queue = candidate.queue
+    self.data = candidate.data
+    self.log = candidate.log
+    self.commitIndex = candidate.commitIndex
+    self.lastApplied = candidate.lastApplied
     self.timeout = 1
 
   def handle_msg(self, msg):
@@ -104,7 +112,10 @@ class Follower:
     :return: self
     """
     term = int(msg['term'])
-    if term > self.term:
+    lastIndex = int(msg['lastLogIndex'])
+    lastTerm = int(msg['lastLogTerm'])
+    if term >= self.term and lastIndex >= len(self.log) - 1 and \
+            lastTerm >= self.log[lastIndex]['term']:
       self.term = term
       self.leader = msg['src']
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
@@ -121,7 +132,7 @@ class Follower:
     :return: self
     """
     self.queue.append(msg)
-    while self.leader is not None and self.queue:
+    while self.queue:
       msg = self.queue.pop(0)
       src = msg['src']
       mid = msg['MID']
@@ -149,7 +160,11 @@ class Candidate:
     self.n = 1 + len(replicas)
     self.queue = []
     self.quorum = set()
+    self.data = {}
     self.term = term
+    self.log = []
+    self.commitIndex = 0
+    self.lastApplied = 0
     self.timeout = random.random() * 0.15 + 0.15
 
   def handle_msg(self, msg):
@@ -189,7 +204,10 @@ class Candidate:
     :return: the resulting candidate or follower
     """
     term = int(msg['term'])
-    if term > self.term:
+    lastIndex = int(msg['lastLogIndex'])
+    lastTerm = int(msg['lastLogTerm'])
+    if term >= self.term and lastIndex >= len(self.log) - 1 and \
+            lastTerm >= self.log[lastIndex]['term']:
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'])
       return Follower(self, msg['src'], term)
@@ -232,6 +250,11 @@ class Leader:
     self.n = candidate.n
     self.queue = candidate.queue
     self.quorum = set()
+    self.data = candidate.data
+    self.log = candidate.log
+    self.commitIndex = candidate.commitIndex
+    self.lastApplied = candidate.lastApplied
+    self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.2
 
   def handle_msg(self, msg):
@@ -284,7 +307,13 @@ class Leader:
     """
     Sends a heartbeat to all other shards that contains any log updates.
     """
-    dump(format_json(self.id, 'FFFF', self.id, 'heartbeat', 0), self.sock)
+    for replica, index in zip(self.replicas, self.nextIndex):
+      d = format_json(self.id, 'FFFF', self.id, 'heartbeat', 0)
+      d['term'] = self.term
+      d['prevLogIndex'] = index
+      d['prevLogTerm'] = self.log[index]['term']
+      d['entries'] = '' #TODO
+      d['leaderCommit'] = self.commitIndex
     return self
 
   def put(self, msg):
