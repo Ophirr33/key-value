@@ -162,7 +162,7 @@ class Candidate:
     self.quorum = set()
     self.data = {}
     self.term = term
-    self.log = []
+    self.log = [{'term': term}]
     self.commitIndex = 0
     self.lastApplied = 0
     self.timeout = random.random() * 0.15 + 0.15
@@ -234,6 +234,9 @@ class Candidate:
     """
     d = format_json(self.id, 'FFFF', self.id, 'election', 0)
     d['term'] = self.term
+    lastIndex = len(self.log) - 1
+    d['lastLogIndex'] = lastIndex
+    d['lastLogTerm'] = self.log[lastIndex]['term']
     dump(d, self.sock)
 
 
