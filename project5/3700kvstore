@@ -314,7 +314,7 @@ class Leader:
       d = format_json(self.id, 'FFFF', self.id, 'heartbeat', 0)
       d['term'] = self.term
       d['prevLogIndex'] = index - 1
-      d['prevLogTerm'] = self.log[index]['term']
+      d['prevLogTerm'] = self.log[index - 1]['term']
       d['entries'] = '' #TODO
       d['leaderCommit'] = self.commitIndex
     return self
