@@ -40,6 +40,7 @@ def debug(sent, mid, type, src):
   :param src: where this message came from
   """
   #print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
+  #
   pass
 
 
