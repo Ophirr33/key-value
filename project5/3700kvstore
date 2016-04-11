@@ -11,6 +11,17 @@ def load(thing):
 def debug(sent, mid, type, src):
   print('%s msg: %s with type: %s for %s' % (sent, mid, type, src))
 
+def follower_from_leader(leader, term):
+  follower = Follower(leader.id, leader.replicas, leader.sock)
+  follower.term = term
+  follower.queue = leader.queue
+  return follower
+
+def format_json(self, src, dst, leader, type, mid):
+  return {'src': src, 'dst': dst, 'leader': leader, 'type': type, 'MID': mid}
+
+
+
 class Follower:
   def __init__(self, id, replicas, sock):
     self.leader = None
@@ -19,26 +30,54 @@ class Follower:
     self.replicas = replicas
     self.sock = sock
     self.n = 1 + len(replicas)
-    self.queue = queue.Queue()
+    self.queue = []
+    self.quorum = set()
 
   def handle_msg(self, msg):
     debug('received', msg['MID'], msg['type'], msg['src'])
     if msg['type'] == 'get' or msg['type'] == 'put':
-      self.handle_client(msg)
-    else:
+      return self.handle_client(msg)
+    elif msg['type'] == 'election':
+      return self.handle_election(msg)
+    elif msg['type'] == 'vote':
+      return self.handle_vote(msg)
+    else:      
       pass
 
-  def format(self, src, dst, leader, type, mid):
-    return {'src': src, 'dst': dst, 'leader': leader, 'type': type, 'MID': mid}
+  def handle_vote(self, msg):
+    if leader is not None:
+      return self
+    else:
+      quorum.add(msg['src'])
+      if len(quorum) > (n // 2):
+        print('%s just became the leader!' % (self.id))
+        return Leader(self)
+      else:
+        return self
+      
+
+  def handle_election(self, msg):
+    term = int(msg['term'])
+    if term > self.term:
+      self.term = term
+      self.leader = msg['src']
+      dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
+      debug('sent', msg['MID'], 'vote', msg['src'])
+      return self
+    else:
+      debug('sent', msg['MID'], 'novote', msg['src'])
+      return self
+      
 
   def handle_client(self, msg):
-    self.queue.put(msg):
+    self.queue.append(msg)
     while leader is not None and not self.queue.empty():
-      msg = self.queue.get()
+      msg = self.pop(0)
       src = msg['src']
       mid = msg['MID']
-      dump(self.format(self.id, src, self.leader, 'redirect', mid), self.sock)
+      dump(format_json(self.id, src, self.leader, 'redirect', mid), self.sock)
       debug('sent', mid, 'redirect', src)
+      return self
 
 class Leader:
   def __init__(self, candidate):
@@ -49,6 +88,37 @@ class Leader:
     self.sock = candidate.sock
     self.n = candidate.n
     self.queue = candidate.queue
+
+  def handle_msg(self, msg):
+    debug('received', msg['MID'], msg['type'], msg['src'])
+    if msg['type'] == 'get' or msg['type'] == 'put':
+      return self.handle_client(msg)
+    elif msg['type'] == 'election':
+      return self.handle_election(msg)
+    else:
+      pass
+
+  def handle_election(self, msg):
+    term = msg['term']
+    if int(term) > self.term:
+      dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
+      debug('sent', msg['MID'], 'vote', msg['src'])
+      return follower_from_leader(self, term)
+    else:
+      debug('sent', msg['MID'], 'novote', msg['src'])
+      return self
+
+  def handle_client(self, msg):
+    self.queue.append(msg)
+    while(not self.queue.empty()):
+      msg = self.queue.pop(0)
+      if msg['type'] == 'put':
+        self.put(msg)
+      else:
+        self.get(msg)
+      debug('sent', mid, msg['type'], msg['src'])
+    return self
+
 
 # Your ID number
 my_id = sys.argv[1]
@@ -72,7 +142,7 @@ while True:
 		
     if len(msg_raw) > 0:
       msg = load(msg_raw)
-      shard.handle_msg(msg)
+      shard = shard.handle_msg(msg)
 		
   clock = time.time()
   if clock-last > 2:
