@@ -122,7 +122,7 @@ class Follower:
     else:
       self.log = self.log[:prevLogIndex + 1]
       self.log += msg['entries']
-      d = format_json(self.id, msg['src'], self.leader, 'ok', msg['MID'])
+      d = format_json(self.id, msg['src'], self.leader, 'ready', msg['MID'])
       d['lastAppendedIndex'] = len(self.log) - 1
       dump(d, self.sock)
       leaderCommit = int(msg['leaderCommit'])
@@ -148,8 +148,8 @@ class Follower:
     lastIndex = int(msg['lastLogIndex'])
     lastTerm = int(msg['lastLogTerm'])
     if (term > self.term or (term == self.term and msg['src'] == self.leader)) \
-        and lastIndex >= len(self.log) - 1 and \
-            lastTerm >= self.log[lastIndex]['term']:
+        and (lastIndex >= len(self.log) - 1 or \
+            lastTerm >= self.log[lastIndex]['term']):
       self.term = term
       self.leader = msg['src']
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
