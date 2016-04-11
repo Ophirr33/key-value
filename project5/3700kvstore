@@ -42,18 +42,15 @@ def debug(sent, mid, type, src):
   print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
 
 
-def follower_from_leader(leader, term):
+def candidate_from_follower(follower):
   """
-  Constructs a new follower from a given leader and term
-  :param leader: the leader whose fields will construct the follower
-  :param term: the new term
-  :return: the new follower
+  Constructs a Candidate from a follower
+  :param follower: the follower to be used
+  :return: the constructed candidate
   """
-  follower = Follower(leader.id, leader.replicas, leader.sock)
-  follower.term = term
-  follower.queue = leader.queue
-  follower.timeout = 1
-  return follower
+  candidate = Candidate(follower.id, follower.replicas, follower.sock, follower.term + 1)
+  candidate.queue = follower.queue
+  return candidate
 
 
 def format_json(src, dst, leader, type, mid):
@@ -73,16 +70,15 @@ class Follower:
   """
   A class that handles all communications to a shard that is a follower/candidate
   """
-  def __init__(self, id, replicas, sock):
-    self.leader = None
-    self.id = id
-    self.term = 0
-    self.replicas = replicas
-    self.sock = sock
-    self.n = 1 + len(replicas)
-    self.queue = []
-    self.quorum = set()
-    self.timeout = random.random() * 0.15 + 0.15
+  def __init__(self, candidate, leader, term):
+    self.leader = leader
+    self.id = candidate.id
+    self.term = term
+    self.replicas = candidate.replicas
+    self.sock = candidate.sock
+    self.n = 1 + len(candidate.replicas)
+    self.queue = candidate.queue
+    self.timeout = 1
 
   def handle_msg(self, msg):
     """
@@ -95,29 +91,11 @@ class Follower:
       return self.handle_client(msg)
     elif msg['type'] == 'election':
       return self.handle_election(msg)
-    elif msg['type'] == 'vote':
-      return self.handle_vote(msg)
     elif msg['type'] == 'heartbeat' and msg['src'] == self.leader:
       set_last(time.time())
       return self
     else:
       return self
-
-  def handle_vote(self, msg):
-    """
-    handles voting messages
-    :param msg: the voting message
-    :return: either a new leader or self
-    """
-    if self.leader is not None:
-      return self
-    else:
-      self.quorum.add(msg['src'])
-      if len(self.quorum) > (self.n // 2):
-        print('%s just became the leader!' % (self.id))
-        return Leader(self)
-      else:
-        return self
 
   def handle_election(self, msg):
     """
@@ -129,21 +107,12 @@ class Follower:
     if term > self.term:
       self.term = term
       self.leader = msg['src']
-      self.timeout = 1
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'])
       return self
     else:
       debug('sent', msg['MID'], 'novote', msg['src'])
       return self
-
-  def election(self):
-    """
-    sends out election messages to all other shards
-    """
-    d = format_json(self.id, 'FFFF', self.id, 'election', 0)
-    d['term'] = self.term
-    dump(d, self.sock)
 
   def handle_client(self, msg):
     """
@@ -166,14 +135,88 @@ class Follower:
     :return:
     """
     print('[%s] term: %s' % (self.id, self.term))
-    if self.leader is None:
-      self.timeout = random.random() * 0.15 + 0.15
-      self.leader = self.id
+    return candidate_from_follower(self)
+
+
+class Candidate:
+  """
+  Represents a replica in the Candidate state
+  """
+  def __init__(self, id, replicas, sock, term):
+    self.id = id
+    self.replicas = replicas
+    self.sock = sock
+    self.n = 1 + len(replicas)
+    self.queue = []
+    self.quorum = set()
+    self.term = term
+    self.timeout = random.random() * 0.15 + 0.15
+
+  def handle_msg(self, msg):
+    """
+    Handles a message received
+    :param msg: the message
+    :return: the resulting candidate, follower, or leader
+    """
+    debug('received', msg['MID'], msg['type'], msg['src'])
+    if msg['type'] == 'get' or msg['type'] == 'put':
+      self.queue.append(msg)
+      return self
+    elif msg['type'] == 'election':
+      return self.handle_election(msg)
+    elif msg['type'] == 'vote':
+      return self.handle_vote(msg)
     else:
+      return self
+
+  def handle_vote(self, msg):
+    """
+    Handles a vote message
+    :param msg: the vote message
+    :return: the resulting candidate or leader
+    """
+    self.quorum.add(msg['src'])
+    if len(self.quorum) > (self.n // 2):
+      print('%s just became the leader!' % (self.id))
+      return Leader(self)
+    else:
+      return self
+
+  def handle_election(self, msg):
+    """
+    Handles an election message
+    :param msg: the election message
+    :return: the resulting candidate or follower
+    """
+    term = int(msg['term'])
+    if term > self.term:
+      dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
+      debug('sent', msg['MID'], 'vote', msg['src'])
+      return Follower(self, msg['src'], term)
+    else:
+      debug('sent', msg['MID'], 'novote', msg['src'])
+      return self
+
+  def handle_timeout(self):
+    """
+    Handles a timeout
+    :return: the candidate
+    """
+    if self.timeout < 1:
       self.timeout = 1
-      self.leader = None
-      self.term += 1
       self.election()
+    else:
+      self.term += 1
+      self.timeout = random.random() * 0.15 + 0.15
+    return self
+
+  def election(self):
+    """
+    Sends out election messages to all other shards
+    """
+    d = format_json(self.id, 'FFFF', self.id, 'election', 0)
+    d['term'] = self.term
+    dump(d, self.sock)
 
 
 class Leader:
@@ -212,11 +255,11 @@ class Leader:
     :return: either the current leader or a follower, dependent on whether the new leader has
     a higher term than the current leader
     """
-    term = msg['term']
-    if int(term) > self.term:
+    term = int(msg['term'])
+    if term > self.term:
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'])
-      return follower_from_leader(self, term)
+      return Follower(self, msg['src'], term)
     else:
       debug('sent', msg['MID'], 'novote', msg['src'])
       return self
@@ -242,6 +285,7 @@ class Leader:
     Sends a heartbeat to all other shards that contains any log updates.
     """
     dump(format_json(self.id, 'FFFF', self.id, 'heartbeat', 0), self.sock)
+    return self
 
   def put(self, msg):
     """
@@ -269,13 +313,13 @@ replica_ids = sys.argv[2:]
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
 sock.connect(my_id)
 
-shard = Follower(my_id, replica_ids, sock)
+shard = Candidate(my_id, replica_ids, sock, 0)
 time.sleep(0.2)
 
 while True:
   timestamp = time.time()
   if timestamp - LAST > shard.timeout:
-    shard.handle_timeout()
+    shard = shard.handle_timeout()
     set_last(timestamp)
 
   ready = select.select([shard.sock], [], [], 0.1)[0]
