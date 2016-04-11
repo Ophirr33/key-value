@@ -268,9 +268,12 @@ class Leader:
     :return: the corresponding shard
     """
     debug('received', msg['MID'], msg['type'], msg['src'])
-    if msg['type'] == 'get' or msg['type'] == 'put':
+    type = msg['type']
+    if type == 'get' or type == 'put':
       return self.handle_client(msg)
-    elif msg['type'] == 'election':
+    elif type == 'ok' or type == 'fail':
+      return self.handle_response(msg)
+    elif type == 'election':
       return self.handle_election(msg)
     else:
       return self
@@ -326,14 +329,17 @@ class Leader:
     Formats a put message and puts it into the log queue
     :param msg: the  message to format
     """
-    pass
+    self.data[msg['key']] = msg['value']
+    dump(format_json(self.id, msg['src'], self.id, 'ok', msg['MID']), self.sock)
 
   def get(self, msg):
     """
     Formats a get message and puts it into the log queue
     :param msg: the put message
     """
-    pass
+    d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
+    d['value'] = self.data[msg['key']] if msg['key'] in self.data else ''
+    dump(d, self.sock)
 
 
 # Your ID number
