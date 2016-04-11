@@ -39,7 +39,8 @@ def debug(sent, mid, type, src):
   :param type: the type of message
   :param src: where this message came from
   """
-  print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
+  #print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
+  pass
 
 
 def candidate_from_follower(follower):
@@ -116,6 +117,7 @@ class Follower:
     prevLogTerm = int(msg['prevLogTerm'])
     if term < self.term or prevLogIndex >= len(self.log) or \
         self.log[prevLogIndex] != prevLogTerm:
+      print(self.log)
       d = format_json(self.id, msg['src'], self.leader, 'not ready', msg['MID'])
       d['lastAppendedIndex'] = self.commitIndex
       dump(d, self.sock)
