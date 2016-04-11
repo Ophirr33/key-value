@@ -128,6 +128,7 @@ class Follower:
       leaderCommit = int(msg['leaderCommit'])
       if leaderCommit > self.commitIndex:
         self.commit(leaderCommit)
+    return self
 
   def commit(self, end):
     for i in range(self.commitIndex, end + 1):
