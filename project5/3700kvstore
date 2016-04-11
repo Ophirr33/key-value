@@ -114,7 +114,8 @@ class Follower:
     term = int(msg['term'])
     lastIndex = int(msg['lastLogIndex'])
     lastTerm = int(msg['lastLogTerm'])
-    if term >= self.term and lastIndex >= len(self.log) - 1 and \
+    if (term > self.term or (term == self.term and msg['src'] == self.leader)) \
+        and lastIndex >= len(self.log) - 1 and \
             lastTerm >= self.log[lastIndex]['term']:
       self.term = term
       self.leader = msg['src']
