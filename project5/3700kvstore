@@ -4,29 +4,75 @@ import sys, socket, select, time, json, random
 
 LAST = 0
 
+
 def dump(thing, sock):
+  """
+  Sends a json message through the given socket
+  :param thing: the json object
+  :param sock: the socket
+  """
   sock.send(json.dumps(thing).encode())
 
+
 def load(thing):
+  """
+  Converts a given json string to a json object
+  :param thing: the string to convert
+  """
   return json.loads(thing.decode('utf-8'))
 
+
 def set_last(x):
+  """
+  Sets the global last variable to the given value
+  :param x: the new timestamp
+  """
   global LAST
   LAST = x
 
+
 def debug(sent, mid, type, src):
+  """
+  A debug print message
+  :param sent: whether this message was sent or received
+  :param mid: the message id to use
+  :param type: the type of message
+  :param src: where this message came from
+  """
   print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
 
+
 def follower_from_leader(leader, term):
+  """
+  Constructs a new follower from a given leader and term
+  :param leader: the leader whose fields will construct the follower
+  :param term: the new term
+  :return: the new follower
+  """
   follower = Follower(leader.id, leader.replicas, leader.sock)
   follower.term = term
   follower.queue = leader.queue
+  follower.timeout = 1
   return follower
 
+
 def format_json(src, dst, leader, type, mid):
+  """
+  Constructs a dictionary given the src, dst, leader, type, mid values
+  :param src: the message source
+  :param dst: the message destination
+  :param leader: the current term's leader
+  :param type: the type of message
+  :param mid: the id of the message
+  :return: a dict with the given key value pairs
+  """
   return {'src': src, 'dst': dst, 'leader': leader, 'type': type, 'MID': mid}
 
+
 class Follower:
+  """
+  A class that handles all communications to a shard that is a follower/candidate
+  """
   def __init__(self, id, replicas, sock):
     self.leader = None
     self.id = id
@@ -39,6 +85,11 @@ class Follower:
     self.timeout = random.random() * 0.15 + 0.15
 
   def handle_msg(self, msg):
+    """
+    Delegates the message according to the type
+    :param msg: the message to handle
+    :return: the new shard object
+    """
     debug('received', msg['MID'], msg['type'], msg['src'])
     if msg['type'] == 'get' or msg['type'] == 'put':
       return self.handle_client(msg)
@@ -49,10 +100,15 @@ class Follower:
     elif msg['type'] == 'heartbeat' and msg['src'] == self.leader:
       set_last(time.time())
       return self
-    else:      
+    else:
       return self
 
   def handle_vote(self, msg):
+    """
+    handles voting messages
+    :param msg: the voting message
+    :return: either a new leader or self
+    """
     if self.leader is not None:
       return self
     else:
@@ -62,9 +118,13 @@ class Follower:
         return Leader(self)
       else:
         return self
-      
 
   def handle_election(self, msg):
+    """
+    handles election messages
+    :param msg: the election message
+    :return: self
+    """
     term = int(msg['term'])
     if term > self.term:
       self.term = term
@@ -78,11 +138,19 @@ class Follower:
       return self
 
   def election(self):
+    """
+    sends out election messages to all other shards
+    """
     d = format_json(self.id, 'FFFF', self.id, 'election', 0)
     d['term'] = self.term
     dump(d, self.sock)
 
   def handle_client(self, msg):
+    """
+    handles client get and put messages
+    :param msg: the message to handle
+    :return: self
+    """
     self.queue.append(msg)
     while self.leader is not None and self.queue:
       msg = self.queue.pop(0)
@@ -93,6 +161,10 @@ class Follower:
     return self
 
   def handle_timeout(self):
+    """
+    Handles a timeout and determines voting policies
+    :return:
+    """
     print('[%s] term: %s' % (self.id, self.term))
     if self.leader is None:
       self.timeout = random.random() * 0.15 + 0.15
@@ -105,6 +177,9 @@ class Follower:
 
 
 class Leader:
+  """
+  A leader shard
+  """
   def __init__(self, candidate):
     self.leader = candidate.id
     self.id = candidate.id
@@ -117,6 +192,11 @@ class Leader:
     self.timeout = 0.2
 
   def handle_msg(self, msg):
+    """
+    Delegates all messages, of which the leader only cares about client and election messages
+    :param msg: the message to handle
+    :return: the corresponding shard
+    """
     debug('received', msg['MID'], msg['type'], msg['src'])
     if msg['type'] == 'get' or msg['type'] == 'put':
       return self.handle_client(msg)
@@ -126,6 +206,12 @@ class Leader:
       return self
 
   def handle_election(self, msg):
+    """
+    Handles incoming election messages
+    :param msg: the election message
+    :return: either the current leader or a follower, dependent on whether the new leader has
+    a higher term than the current leader
+    """
     term = msg['term']
     if int(term) > self.term:
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
@@ -136,6 +222,11 @@ class Leader:
       return self
 
   def handle_client(self, msg):
+    """
+    Handles a client message
+    :param msg: the get or put to handle
+    :return: self
+    """
     self.queue.append(msg)
     while self.queue:
       msg = self.queue.pop(0)
@@ -147,13 +238,25 @@ class Leader:
     return self
 
   def handle_timeout(self):
+    """
+    Sends a heartbeat to all other shards that contains any log updates.
+    """
     dump(format_json(self.id, 'FFFF', self.id, 'heartbeat', 0), self.sock)
 
   def put(self, msg):
+    """
+    Formats a put message and puts it into the log queue
+    :param msg: the  message to format
+    """
     pass
-  
+
   def get(self, msg):
+    """
+    Formats a get message and puts it into the log queue
+    :param msg: the put message
+    """
     pass
+
 
 # Your ID number
 my_id = sys.argv[1]
@@ -179,7 +282,7 @@ while True:
 
   if shard.sock in ready:
     msg_raw = shard.sock.recv(32768)
-		
+
     if len(msg_raw) > 0:
       msg = load(msg_raw)
       shard = shard.handle_msg(msg)
