@@ -101,9 +101,41 @@ class Follower:
       return self.handle_election(msg)
     elif msg['type'] == 'heartbeat' and msg['src'] == self.leader:
       set_last(time.time())
-      return self
+      return self.handle_heartbeat(msg)
     else:
       return self
+
+  def handle_heartbeat(self, msg):
+    """
+    Reads the append entries and responds with the state of the log
+    :param msg: the heartbeat
+    :return: self
+    """
+    term = int(msg['term'])
+    prevLogIndex = int(msg['prevLogIndex'])
+    prevLogTerm = int(msg['prevLogTerm'])
+    if term < self.term or prevLogIndex >= len(self.log) or \
+        self.log[prevLogIndex] != prevLogTerm:
+      d = format_json(self.id, msg['src'], self.leader, 'not ready', msg['MID'])
+      d['lastAppendedIndex'] = self.commitIndex
+      dump(d, self.sock)
+    else:
+      self.log = self.log[:prevLogIndex + 1]
+      self.log += msg['entries']
+      d = format_json(self.id, msg['src'], self.leader, 'ok', msg['MID'])
+      d['lastAppendedIndex'] = len(self.log) - 1
+      dump(d, self.sock)
+      leaderCommit = int(msg['leaderCommit'])
+      if leaderCommit > self.commitIndex:
+        self.commit(leaderCommit)
+
+  def commit(self, end):
+    for i in range(self.commitIndex, end + 1):
+      msg = self.log[i]['msg']
+      if 'value' in msg:
+        self.data[msg['key']] = msg['value']
+    self.commitIndex = i
+
 
   def handle_election(self, msg):
     """
@@ -253,7 +285,7 @@ class Leader:
     self.sock = candidate.sock
     self.n = candidate.n
     self.queue = candidate.queue
-    self.quorum = set()
+    self.quorum = {}
     self.data = candidate.data
     self.log = candidate.log
     self.commitIndex = candidate.commitIndex
@@ -271,12 +303,50 @@ class Leader:
     type = msg['type']
     if type == 'get' or type == 'put':
       return self.handle_client(msg)
-    elif type == 'ok' or type == 'fail':
+    elif type == 'ready' or type == 'not ready':
       return self.handle_response(msg)
     elif type == 'election':
       return self.handle_election(msg)
     else:
       return self
+
+  def handle_response(self, msg):
+    """
+    Handles responses from follower shards, and determines whether quorum has been
+    reached and commits what it can
+    :param msg: the msg to handle
+    :return: self
+    """
+    index = self.replicas.index(msg['src'])
+    lastLogIndex = int(msg['lastAppendedIndex']) + 1
+    if msg['type'] == 'not ready':
+      self.nextIndex[index] = lastLogIndex
+    else:
+      for i in range(self.nextIndex[index], lastLogIndex):
+        if i in self.quorum:
+          self.quorum[i].add(msg['src'])
+      self.commit(lastLogIndex)
+      self.nextIndex[index] = lastLogIndex
+    return self
+
+  def commit(self, end):
+    """
+    Commits all messages from the log up until the end index
+    :param end: the index to commit until
+    """
+    for i in range(self.commitIndex, end):
+      if i not in self.quorum:
+        break
+      if len(self.quorum[i]) > self.n // 2:
+        self.commitIndex = i
+        msg = self.log[i]['msg']
+        d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
+        if 'value' in msg:
+          self.data[msg['key']] = msg['value']
+          dump(d, self.sock)
+        else:
+          d['value'] = self.data[msg['key']]
+          dump(d, self.sock)
 
   def handle_election(self, msg):
     """
@@ -303,10 +373,8 @@ class Leader:
     self.queue.append(msg)
     while self.queue:
       msg = self.queue.pop(0)
-      if msg['type'] == 'put':
-        self.put(msg)
-      else:
-        self.get(msg)
+      self.quorum[len(self.log)] = set()
+      self.log_message(msg)
       debug('sent', msg['MID'], msg['type'], msg['src'])
     return self
 
@@ -319,27 +387,18 @@ class Leader:
       d['term'] = self.term
       d['prevLogIndex'] = index - 1
       d['prevLogTerm'] = self.log[index - 1]['term']
-      d['entries'] = '' #TODO
+      d['entries'] = self.log[index:]
       d['leaderCommit'] = self.commitIndex
       dump(d, self.sock)
     return self
 
-  def put(self, msg):
+  def log_message(self, msg):
     """
-    Formats a put message and puts it into the log queue
-    :param msg: the  message to format
+    Adds a put request to the back of the log
     """
-    self.data[msg['key']] = msg['value']
-    dump(format_json(self.id, msg['src'], self.id, 'ok', msg['MID']), self.sock)
+    self.log.append({'term': self.term, 'msg': msg})
 
-  def get(self, msg):
-    """
-    Formats a get message and puts it into the log queue
-    :param msg: the put message
-    """
-    d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
-    d['value'] = self.data[msg['key']] if msg['key'] in self.data else ''
-    dump(d, self.sock)
+
 
 
 # Your ID number
