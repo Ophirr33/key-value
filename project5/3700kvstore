@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-import sys, socket, select, time, json, random, queue
+import sys, socket, select, time, json, random
+
+LAST = 0
 
 def dump(thing, sock):
   sock.send(json.dumps(thing).encode())
@@ -8,8 +10,12 @@ def dump(thing, sock):
 def load(thing):
   return json.loads(thing.decode('utf-8'))
 
+def set_last(x):
+  global LAST
+  LAST = x
+
 def debug(sent, mid, type, src):
-  print('%s msg: %s with type: %s for %s' % (sent, mid, type, src))
+  print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
 
 def follower_from_leader(leader, term):
   follower = Follower(leader.id, leader.replicas, leader.sock)
@@ -17,10 +23,8 @@ def follower_from_leader(leader, term):
   follower.queue = leader.queue
   return follower
 
-def format_json(self, src, dst, leader, type, mid):
+def format_json(src, dst, leader, type, mid):
   return {'src': src, 'dst': dst, 'leader': leader, 'type': type, 'MID': mid}
-
-
 
 class Follower:
   def __init__(self, id, replicas, sock):
@@ -32,6 +36,7 @@ class Follower:
     self.n = 1 + len(replicas)
     self.queue = []
     self.quorum = set()
+    self.timeout = random.random() * 0.15 + 0.15
 
   def handle_msg(self, msg):
     debug('received', msg['MID'], msg['type'], msg['src'])
@@ -41,15 +46,18 @@ class Follower:
       return self.handle_election(msg)
     elif msg['type'] == 'vote':
       return self.handle_vote(msg)
+    elif msg['type'] == 'heartbeat' and msg['src'] == self.leader:
+      set_last(time.time())
+      return self
     else:      
-      pass
+      return self
 
   def handle_vote(self, msg):
-    if leader is not None:
+    if self.leader is not None:
       return self
     else:
-      quorum.add(msg['src'])
-      if len(quorum) > (n // 2):
+      self.quorum.add(msg['src'])
+      if len(self.quorum) > (self.n // 2):
         print('%s just became the leader!' % (self.id))
         return Leader(self)
       else:
@@ -61,23 +69,40 @@ class Follower:
     if term > self.term:
       self.term = term
       self.leader = msg['src']
+      self.timeout = 1
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'])
       return self
     else:
       debug('sent', msg['MID'], 'novote', msg['src'])
       return self
-      
+
+  def election(self):
+    d = format_json(self.id, 'FFFF', self.id, 'election', 0)
+    d['term'] = self.term
+    dump(d, self.sock)
 
   def handle_client(self, msg):
     self.queue.append(msg)
-    while leader is not None and not self.queue.empty():
-      msg = self.pop(0)
+    while self.leader is not None and self.queue:
+      msg = self.queue.pop(0)
       src = msg['src']
       mid = msg['MID']
       dump(format_json(self.id, src, self.leader, 'redirect', mid), self.sock)
       debug('sent', mid, 'redirect', src)
-      return self
+    return self
+
+  def handle_timeout(self):
+    print('[%s] term: %s' % (self.id, self.term))
+    if self.leader is None:
+      self.timeout = random.random() * 0.15 + 0.15
+      self.leader = self.id
+    else:
+      self.timeout = 1
+      self.leader = None
+      self.term += 1
+      self.election()
+
 
 class Leader:
   def __init__(self, candidate):
@@ -88,6 +113,8 @@ class Leader:
     self.sock = candidate.sock
     self.n = candidate.n
     self.queue = candidate.queue
+    self.quorum = set()
+    self.timeout = 0.2
 
   def handle_msg(self, msg):
     debug('received', msg['MID'], msg['type'], msg['src'])
@@ -96,7 +123,7 @@ class Leader:
     elif msg['type'] == 'election':
       return self.handle_election(msg)
     else:
-      pass
+      return self
 
   def handle_election(self, msg):
     term = msg['term']
@@ -110,15 +137,23 @@ class Leader:
 
   def handle_client(self, msg):
     self.queue.append(msg)
-    while(not self.queue.empty()):
+    while self.queue:
       msg = self.queue.pop(0)
       if msg['type'] == 'put':
         self.put(msg)
       else:
         self.get(msg)
-      debug('sent', mid, msg['type'], msg['src'])
+      debug('sent', msg['MID'], msg['type'], msg['src'])
     return self
 
+  def handle_timeout(self):
+    dump(format_json(self.id, 'FFFF', self.id, 'heartbeat', 0), self.sock)
+
+  def put(self, msg):
+    pass
+  
+  def get(self, msg):
+    pass
 
 # Your ID number
 my_id = sys.argv[1]
@@ -131,10 +166,15 @@ replica_ids = sys.argv[2:]
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
 sock.connect(my_id)
 
-last = 0
 shard = Follower(my_id, replica_ids, sock)
+time.sleep(0.2)
 
 while True:
+  timestamp = time.time()
+  if timestamp - LAST > shard.timeout:
+    shard.handle_timeout()
+    set_last(timestamp)
+
   ready = select.select([shard.sock], [], [], 0.1)[0]
 
   if shard.sock in ready:
@@ -143,7 +183,3 @@ while True:
     if len(msg_raw) > 0:
       msg = load(msg_raw)
       shard = shard.handle_msg(msg)
-		
-  clock = time.time()
-  if clock-last > 2:
-    last = clock
