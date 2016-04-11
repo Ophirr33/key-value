@@ -318,7 +318,7 @@ class Leader:
       d['prevLogTerm'] = self.log[index - 1]['term']
       d['entries'] = '' #TODO
       d['leaderCommit'] = self.commitIndex
-      dump(d)
+      dump(d, self.sock)
     return self
 
   def put(self, msg):
