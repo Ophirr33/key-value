@@ -339,6 +339,7 @@ class Leader:
         #print(self.quorum)
         break
       if len(self.quorum[i]) > self.n // 2:
+        del self.quorum[i]
         self.commitIndex = i
         msg = self.log[i]['msg']
         d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
