@@ -39,7 +39,7 @@ def debug(sent, mid, type, src, leader):
   :param type: the type of message
   :param src: where this message came from
   """
-  #print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
+  print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
   pass
 
 def candidate_from_follower(follower):
@@ -225,7 +225,7 @@ class Candidate:
     :return: the resulting candidate or leader
     """
     self.quorum.add(msg['src'])
-    if len(self.quorum) > (self.n // 2):
+    if len(self.quorum) >= (self.n // 2):
       #print('%s just became the leader!' % (self.id))
       return Leader(self)
     else:
