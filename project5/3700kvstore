@@ -179,7 +179,7 @@ class Follower:
     Handles a timeout and determines voting policies
     :return:
     """
-    print('[%s] term: %s' % (self.id, self.term))
+    #print('[%s] term: %s' % (self.id, self.term))
     return candidate_from_follower(self)
 
 
@@ -226,7 +226,7 @@ class Candidate:
     """
     self.quorum.add(msg['src'])
     if len(self.quorum) > (self.n // 2):
-      print('%s just became the leader!' % (self.id))
+      #print('%s just became the leader!' % (self.id))
       return Leader(self)
     else:
       return self
@@ -336,7 +336,7 @@ class Leader:
     """
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
-        print(self.quorum)
+        #print(self.quorum)
         break
       if len(self.quorum[i]) > self.n // 2:
         self.commitIndex = i
@@ -346,7 +346,7 @@ class Leader:
           self.data[msg['key']] = msg['value']
           dump(d, self.sock)
         else:
-          d['value'] = self.data[msg['key']]
+          d['value'] = self.data[msg['key']] if msg['key'] in self.data else ''
           dump(d, self.sock)
 
   def handle_election(self, msg):
