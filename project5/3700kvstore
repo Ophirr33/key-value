@@ -335,6 +335,7 @@ class Leader:
     Commits all messages from the log up until the end index
     :param end: the index to commit until
     """
+    print('But I did get called!')
     for i in range(self.commitIndex, end):
       if i not in self.quorum:
         break
