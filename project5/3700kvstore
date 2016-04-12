@@ -341,6 +341,7 @@ class Leader:
       if len(self.quorum[i]) > self.n // 2:
         self.commitIndex = i
         msg = self.log[i]['msg']
+        print('Made it here!')
         d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
         if 'value' in msg:
           self.data[msg['key']] = msg['value']
