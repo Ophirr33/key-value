@@ -392,7 +392,7 @@ class Leader:
       d['term'] = self.term
       d['prevLogIndex'] = index - 1
       d['prevLogTerm'] = self.log[index - 1]['term']
-      d['entries'] = self.log[index:]
+      d['entries'] = self.log[index:] if len(self.log[index:]) <= 25 else self.log[index:index + 25]
       d['leaderCommit'] = self.commitIndex
       dump(d, self.sock)
     return self
