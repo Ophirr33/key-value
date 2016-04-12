@@ -86,7 +86,7 @@ class Follower:
     self.log = candidate.log
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
-    self.timeout = 1
+    self.timeout = 2
 
   def handle_msg(self, msg):
     """
@@ -240,7 +240,7 @@ class Candidate:
     term = int(msg['term'])
     lastIndex = int(msg['lastLogIndex'])
     lastTerm = int(msg['lastLogTerm'])
-    if term >= self.term and (lastIndex >= len(self.log) - 1 or \
+    if term > self.term and (lastIndex >= len(self.log) - 1 or \
             lastTerm >= self.log[lastIndex]['term']):
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'], 'candidate')
@@ -256,9 +256,9 @@ class Candidate:
     """
     if self.timeout < 1:
       self.timeout = 1
+      self.term += 1
       self.election()
     else:
-      self.term += 1
       self.timeout = random.random() * 0.15 + 0.15
     return self
 
@@ -291,7 +291,7 @@ class Leader:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
-    self.timeout = 0.12
+    self.timeout = 0.4
 
   def handle_msg(self, msg):
     """
