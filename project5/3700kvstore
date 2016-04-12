@@ -86,7 +86,7 @@ class Follower:
     self.log = candidate.log
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
-    self.timeout = 2
+    self.timeout = 1
 
   def handle_msg(self, msg):
     """
@@ -135,7 +135,7 @@ class Follower:
       msg = self.log[i]['msg']
       if 'value' in msg:
         self.data[msg['key']] = msg['value']
-    self.commitIndex = i
+      self.commitIndex = i
 
 
   def handle_election(self, msg):
@@ -291,7 +291,7 @@ class Leader:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
-    self.timeout = 0.4
+    self.timeout = 0.12
 
   def handle_msg(self, msg):
     """
@@ -433,5 +433,5 @@ while True:
 
   timestamp = time.time()
   if timestamp - LAST > shard.timeout:
-    shard = shard.handle_timeout()
+    #shard = shard.handle_timeout()
     set_last(timestamp)
