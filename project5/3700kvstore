@@ -240,8 +240,8 @@ class Candidate:
     term = int(msg['term'])
     lastIndex = int(msg['lastLogIndex'])
     lastTerm = int(msg['lastLogTerm'])
-    if term >= self.term and lastIndex >= len(self.log) - 1 and \
-            lastTerm >= self.log[lastIndex]['term']:
+    if term >= self.term and (lastIndex >= len(self.log) - 1 or \
+            lastTerm >= self.log[lastIndex]['term']):
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'])
       return Follower(self, msg['src'], term)
