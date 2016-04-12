@@ -433,5 +433,5 @@ while True:
 
   timestamp = time.time()
   if timestamp - LAST > shard.timeout:
-    #shard = shard.handle_timeout()
+    shard = shard.handle_timeout()
     set_last(timestamp)
