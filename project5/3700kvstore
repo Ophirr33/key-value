@@ -39,9 +39,7 @@ def debug(sent, mid, type, src):
   :param type: the type of message
   :param src: where this message came from
   """
-  #print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
-  #
-  pass
+  print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
 
 
 def candidate_from_follower(follower):
@@ -118,8 +116,6 @@ class Follower:
     prevLogTerm = int(msg['prevLogTerm'])
     if term < self.term or prevLogIndex >= len(self.log) or \
         self.log[prevLogIndex]['term'] != prevLogTerm:
-      print(self.log)
-      print('prevLogIndex: %s, len: %s' % (prevLogIndex, len(self.log)))
       d = format_json(self.id, msg['src'], self.leader, 'not ready', msg['MID'])
       d['lastAppendedIndex'] = self.commitIndex
       dump(d, self.sock)
@@ -387,7 +383,6 @@ class Leader:
     """
     Sends a heartbeat to all other shards that contains any log updates.
     """
-    print(self.log)
     for replica, index in zip(self.replicas, self.nextIndex):
       d = format_json(self.id, 'FFFF', self.id, 'heartbeat', 0)
       d['term'] = self.term
