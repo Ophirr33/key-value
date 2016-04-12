@@ -380,7 +380,7 @@ class Leader:
       self.quorum[len(self.log)] = set()
       self.log_message(msg)
       debug('sent', msg['MID'], msg['type'], msg['src'], self.id + ' is leader')
-    return self
+    return self.handle_timeout()
 
   def handle_timeout(self):
     """
