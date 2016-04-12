@@ -240,7 +240,7 @@ class Candidate:
     term = int(msg['term'])
     lastIndex = int(msg['lastLogIndex'])
     lastTerm = int(msg['lastLogTerm'])
-    if term >= self.term and (lastIndex >= len(self.log) - 1 or \
+    if term > self.term and (lastIndex >= len(self.log) - 1 or \
             lastTerm >= self.log[lastIndex]['term']):
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'], 'candidate')
@@ -256,9 +256,9 @@ class Candidate:
     """
     if self.timeout < 1:
       self.timeout = 1
+      self.term += 1
       self.election()
     else:
-      self.term += 1
       self.timeout = random.random() * 0.15 + 0.15
     return self
 
@@ -377,7 +377,7 @@ class Leader:
       self.quorum[len(self.log)] = set()
       self.log_message(msg)
       debug('sent', msg['MID'], msg['type'], msg['src'], self.id + ' is leader')
-    return self
+    return self.handle_timeout()
 
   def handle_timeout(self):
     """
