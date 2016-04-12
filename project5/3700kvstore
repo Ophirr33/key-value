@@ -291,7 +291,7 @@ class Leader:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
-    self.timeout = 0.05
+    self.timeout = 0.2
 
   def handle_msg(self, msg):
     """
