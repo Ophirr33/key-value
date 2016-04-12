@@ -256,9 +256,9 @@ class Candidate:
     """
     if self.timeout < 1:
       self.timeout = 1
+      self.term += 1
       self.election()
     else:
-      self.term += 1
       self.timeout = random.random() * 0.15 + 0.15
     return self
 
