@@ -420,10 +420,6 @@ shard = Candidate(my_id, replica_ids, sock, 0)
 time.sleep(0.05)
 
 while True:
-  timestamp = time.time()
-  if timestamp - LAST > shard.timeout:
-    shard = shard.handle_timeout()
-    set_last(timestamp)
 
   ready = select.select([shard.sock], [], [], 0.1)[0]
 
@@ -433,3 +429,8 @@ while True:
     if len(msg_raw) > 0:
       msg = load(msg_raw)
       shard = shard.handle_msg(msg)
+
+  timestamp = time.time()
+  if timestamp - LAST > shard.timeout:
+    shard = shard.handle_timeout()
+    set_last(timestamp)
