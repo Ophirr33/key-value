@@ -327,7 +327,7 @@ class Leader:
           self.quorum[i].add(msg['src'])
       self.commit(lastLogIndex)
       self.nextIndex[index] = lastLogIndex
-    return self.handle_timeout()
+    return self
 
   def commit(self, end):
     """
@@ -386,7 +386,7 @@ class Leader:
     """
     Sends a heartbeat to all other shards that contains any log updates.
     """
-    #set_last(time.time())
+    set_last(time.time())
     for replica, index in zip(self.replicas, self.nextIndex):
       d = format_json(self.id, 'FFFF', self.id, 'heartbeat', 0)
       d['term'] = self.term
