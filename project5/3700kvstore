@@ -196,7 +196,7 @@ class Candidate:
     self.quorum = set()
     self.data = {}
     self.term = term
-    self.log = [{'term': term}]
+    self.log = [{'term': term, 'msg': ''}]
     self.commitIndex = 0
     self.lastApplied = 0
     self.timeout = random.random() * 0.15 + 0.15
