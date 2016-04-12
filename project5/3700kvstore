@@ -345,9 +345,11 @@ class Leader:
         if 'value' in msg:
           self.data[msg['key']] = msg['value']
           dump(d, self.sock)
-        else:
-          d['value'] = self.data[msg['key']] if msg['key'] in self.data else ''
+        elif msg['key'] in self.data:
+          d['value'] = self.data[msg['key']]
           dump(d, self.sock)
+        else:
+          break
 
   def handle_election(self, msg):
     """
