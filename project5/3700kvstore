@@ -31,7 +31,7 @@ def set_last(x):
   LAST = x
 
 
-def debug(sent, mid, type, src):
+def debug(sent, mid, type, src, leader):
   """
   A debug print message
   :param sent: whether this message was sent or received
@@ -39,7 +39,7 @@ def debug(sent, mid, type, src):
   :param type: the type of message
   :param src: where this message came from
   """
-  print('[%s] %s msg: %s with type: %s for %s' % (sys.argv[1], sent, mid, type, src))
+  print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
 
 
 def candidate_from_follower(follower):
@@ -94,7 +94,7 @@ class Follower:
     :param msg: the message to handle
     :return: the new shard object
     """
-    debug('received', msg['MID'], msg['type'], msg['src'])
+    debug('received', msg['MID'], msg['type'], msg['src'], self.leader)
     if msg['type'] == 'get' or msg['type'] == 'put':
       return self.handle_client(msg)
     elif msg['type'] == 'election':
@@ -153,10 +153,10 @@ class Follower:
       self.term = term
       self.leader = msg['src']
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
-      debug('sent', msg['MID'], 'vote', msg['src'])
+      debug('sent', msg['MID'], 'vote', msg['src'], self.leader)
       return self
     else:
-      debug('sent', msg['MID'], 'novote', msg['src'])
+      debug('sent', msg['MID'], 'novote', msg['src'], self.leader)
       return self
 
   def handle_client(self, msg):
@@ -171,7 +171,7 @@ class Follower:
       src = msg['src']
       mid = msg['MID']
       dump(format_json(self.id, src, self.leader, 'redirect', mid), self.sock)
-      debug('sent', mid, 'redirect', src)
+      debug('sent', mid, 'redirect', src, self.leader)
     return self
 
   def handle_timeout(self):
@@ -207,7 +207,7 @@ class Candidate:
     :param msg: the message
     :return: the resulting candidate, follower, or leader
     """
-    debug('received', msg['MID'], msg['type'], msg['src'])
+    debug('received', msg['MID'], msg['type'], msg['src'], 'candidate')
     if msg['type'] == 'get' or msg['type'] == 'put':
       self.queue.append(msg)
       return self
@@ -243,10 +243,10 @@ class Candidate:
     if term >= self.term and (lastIndex >= len(self.log) - 1 or \
             lastTerm >= self.log[lastIndex]['term']):
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
-      debug('sent', msg['MID'], 'vote', msg['src'])
+      debug('sent', msg['MID'], 'vote', msg['src'], 'candidate')
       return Follower(self, msg['src'], term)
     else:
-      debug('sent', msg['MID'], 'novote', msg['src'])
+      debug('sent', msg['MID'], 'novote', msg['src'], 'candidate')
       return self
 
   def handle_timeout(self):
@@ -279,7 +279,6 @@ class Leader:
   A leader shard
   """
   def __init__(self, candidate):
-    self.leader = candidate.id
     self.id = candidate.id
     self.term = candidate.term
     self.replicas = candidate.replicas
@@ -300,7 +299,7 @@ class Leader:
     :param msg: the message to handle
     :return: the corresponding shard
     """
-    debug('received', msg['MID'], msg['type'], msg['src'])
+    debug('received', msg['MID'], msg['type'], msg['src'], self.id)
     type = msg['type']
     if type == 'get' or type == 'put':
       return self.handle_client(msg)
@@ -362,10 +361,10 @@ class Leader:
     term = int(msg['term'])
     if term > self.term:
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
-      debug('sent', msg['MID'], 'vote', msg['src'])
+      debug('sent', msg['MID'], 'vote', msg['src'], self.id + ' is leader')
       return Follower(self, msg['src'], term)
     else:
-      debug('sent', msg['MID'], 'novote', msg['src'])
+      debug('sent', msg['MID'], 'novote', msg['src'], self.id + ' is leader')
       return self
 
   def handle_client(self, msg):
@@ -379,7 +378,7 @@ class Leader:
       msg = self.queue.pop(0)
       self.quorum[len(self.log)] = set()
       self.log_message(msg)
-      debug('sent', msg['MID'], msg['type'], msg['src'])
+      debug('sent', msg['MID'], msg['type'], msg['src'], self.id + ' is leader')
     return self
 
   def handle_timeout(self):
