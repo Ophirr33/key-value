@@ -386,6 +386,7 @@ class Leader:
     """
     Sends a heartbeat to all other shards that contains any log updates.
     """
+    print(self.log)
     for replica, index in zip(self.replicas, self.nextIndex):
       d = format_json(self.id, 'FFFF', self.id, 'heartbeat', 0)
       d['term'] = self.term
