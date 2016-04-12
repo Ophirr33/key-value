@@ -291,7 +291,7 @@ class Leader:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
-    self.timeout = 0.2
+    self.timeout = 0.12
 
   def handle_msg(self, msg):
     """
@@ -422,7 +422,7 @@ time.sleep(0.05)
 
 while True:
 
-  ready = select.select([shard.sock], [], [], 0.1)[0]
+  ready = select.select([shard.sock], [], [], 0.01)[0]
 
   if shard.sock in ready:
     msg_raw = shard.sock.recv(32768)
