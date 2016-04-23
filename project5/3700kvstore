@@ -88,7 +88,7 @@ class Follower:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.timeout = 1
-    #print('%s just became a follower' % self.id)
+    print('%s just became a follower' % self.id)
 
   def handle_msg(self, msg):
     """
@@ -118,8 +118,8 @@ class Follower:
     prevLogTerm = int(msg['prevLogTerm'])
     if term < self.term or prevLogIndex >= len(self.log) or \
         self.log[prevLogIndex]['term'] != prevLogTerm:
-      #print('Term? Me: %s Leader: %s, Log Index? Me: %s Leader: %s, Log Term? Me: %s Leader: %s' %
-      #      (self.term, term, len(self.log), prevLogIndex, self.log[prevLogIndex]['term'], prevLogTerm))
+      print('Term? Me: %s Leader: %s, Log Index? Me: %s Leader: %s, Log Term? Me: %s Leader: %s' %
+            (self.term, term, len(self.log), prevLogIndex, self.log[prevLogIndex]['term'], prevLogTerm))
       d = format_json(self.id, msg['src'], self.leader, 'not ready', msg['MID'])
       d['lastAppendedIndex'] = self.commitIndex
       dump(d, self.sock)
@@ -202,7 +202,7 @@ class Candidate:
     self.commitIndex = 0
     self.lastApplied = 0
     self.timeout = random.random() * 0.15 + 0.15
-    #print('%s just became a candidate' % id)
+    print('%s just became a candidate' % id)
 
   def handle_msg(self, msg):
     """
@@ -294,7 +294,7 @@ class Leader:
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.12
     self.quorum = self.init_quorum()
-    #print('%s just became the leader' % candidate.id)
+    print('%s just became the leader' % candidate.id)
 
   def init_quorum(self):
     """
@@ -407,7 +407,7 @@ class Leader:
       d['entries'] = self.log[index:] if len(self.log[index:]) <= 25 else self.log[index:index + 25]
       d['leaderCommit'] = self.commitIndex
       dump(d, self.sock)
-    #print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
+    print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
     return self
 
   def log_message(self, msg):
