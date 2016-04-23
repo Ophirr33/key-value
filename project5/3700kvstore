@@ -38,8 +38,9 @@ def debug(sent, mid, type, src, leader):
   :param mid: the message id to use
   :param type: the type of message
   :param src: where this message came from
+  :param leader: the leader's id
   """
-  print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
+  #print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
   #pass
 
 def candidate_from_follower(follower):
@@ -87,6 +88,7 @@ class Follower:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.timeout = 1
+    print('%s just became a follower' % self.id)
 
   def handle_msg(self, msg):
     """
@@ -178,7 +180,6 @@ class Follower:
     Handles a timeout and determines voting policies
     :return:
     """
-    print('[%s] term: %s' % (self.id, self.term))
     return candidate_from_follower(self)
 
 
@@ -199,6 +200,7 @@ class Candidate:
     self.commitIndex = 0
     self.lastApplied = 0
     self.timeout = random.random() * 0.15 + 0.15
+    print('%s just became a candidate' % id)
 
   def handle_msg(self, msg):
     """
@@ -225,7 +227,6 @@ class Candidate:
     """
     self.quorum.add(msg['src'])
     if len(self.quorum) >= (self.n // 2):
-      print('%s just became the leader!' % (self.id))
       return Leader(self)
     else:
       return self
@@ -291,6 +292,7 @@ class Leader:
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.12
+    print('%s just became the leader' % candidate.id)
 
   def handle_msg(self, msg):
     """
@@ -374,10 +376,10 @@ class Leader:
     """
     self.queue.append(msg)
     while self.queue:
-      msg = self.queue.pop(0)
+      m = self.queue.pop(0)
       self.quorum[len(self.log)] = set()
-      self.log_message(msg)
-      debug('sent', msg['MID'], msg['type'], msg['src'], self.id + ' is leader')
+      self.log_message(m)
+      debug('sent', m['MID'], m['type'], m['src'], self.id + ' is leader')
     return self.handle_timeout()
 
   def handle_timeout(self):
