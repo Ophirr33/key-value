@@ -358,6 +358,7 @@ class Leader:
     """
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
+        print('COMMIT STOPPED')
         break
       if len(self.quorum[i]) >= self.n // 2:
         del self.quorum[i]
