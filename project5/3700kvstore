@@ -184,6 +184,9 @@ class Follower:
     """
     return candidate_from_follower(self)
 
+  def is_leader(self):
+    pass
+
 
 class Candidate:
   """
@@ -275,6 +278,9 @@ class Candidate:
     d['lastLogTerm'] = self.log[lastIndex]['term']
     dump(d, self.sock)
 
+  def is_leader(self):
+    pass
+
 
 class Leader:
   """
@@ -295,6 +301,9 @@ class Leader:
     self.timeout = 0.12
     self.quorum = self.init_quorum()
     print('%s just became the leader' % candidate.id)
+
+  def is_leader(self):
+    print(self.log)
 
   def init_quorum(self):
     """
@@ -433,7 +442,13 @@ sock.connect(my_id)
 shard = Candidate(my_id, replica_ids, sock, 0)
 time.sleep(0.1)
 
+started = time.time()
+
 while True:
+
+  if time.time() - started >= 28:
+    shard.is_leader()
+    started = time.time()
 
   ready = select.select([shard.sock], [], [], 0.01)[0]
 
