@@ -418,7 +418,7 @@ sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
 sock.connect(my_id)
 
 shard = Candidate(my_id, replica_ids, sock, 0)
-time.sleep(0.05)
+time.sleep(0.1)
 
 while True:
 
