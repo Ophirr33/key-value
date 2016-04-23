@@ -39,8 +39,8 @@ def debug(sent, mid, type, src, leader):
   :param type: the type of message
   :param src: where this message came from
   """
-  #print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
-  pass
+  print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
+  #pass
 
 def candidate_from_follower(follower):
   """
@@ -127,7 +127,7 @@ class Follower:
       dump(d, self.sock)
       leaderCommit = int(msg['leaderCommit'])
       if leaderCommit > self.commitIndex:
-        self.commit(leaderCommit)
+        self.commit(min(leaderCommit, len(self.log) - 1))
     return self
 
   def commit(self, end):
@@ -136,7 +136,6 @@ class Follower:
       if 'value' in msg:
         self.data[msg['key']] = msg['value']
       self.commitIndex = i
-
 
   def handle_election(self, msg):
     """
@@ -179,7 +178,7 @@ class Follower:
     Handles a timeout and determines voting policies
     :return:
     """
-    #print('[%s] term: %s' % (self.id, self.term))
+    print('[%s] term: %s' % (self.id, self.term))
     return candidate_from_follower(self)
 
 
@@ -226,7 +225,7 @@ class Candidate:
     """
     self.quorum.add(msg['src'])
     if len(self.quorum) >= (self.n // 2):
-      #print('%s just became the leader!' % (self.id))
+      print('%s just became the leader!' % (self.id))
       return Leader(self)
     else:
       return self
@@ -336,7 +335,6 @@ class Leader:
     """
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
-        #print(self.quorum)
         break
       if len(self.quorum[i]) >= self.n // 2:
         del self.quorum[i]
