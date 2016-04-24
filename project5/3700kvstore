@@ -356,6 +356,7 @@ class Leader:
     Commits all messages from the log up until the end index
     :param end: the index to commit until
     """
+    temp = self.commitIndex
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
         break
@@ -372,6 +373,8 @@ class Leader:
           dump(d, self.sock)
         else:
           break
+    if temp < self.commitIndex:
+      self.handle_timeout()
 
   def handle_election(self, msg):
     """
