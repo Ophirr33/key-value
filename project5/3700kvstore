@@ -139,7 +139,7 @@ class Follower:
       msg = self.log[i]['msg']
       if 'value' in msg:
         self.data[msg['key']] = msg['value']
-        print('%s COMMITTED %s : %s' % (self.id, msg['key'], msg['value']))
+        print('%s INDEX: %s COMMITTED %s : %s' % (self.id, i, msg['key'], msg['value']))
       self.commitIndex = i
 
   def handle_election(self, msg):
@@ -301,7 +301,7 @@ class Leader:
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.12
     self.quorum = self.init_quorum()
-    print('%s just became the leader' % candidate.id)
+    print('%s just became the leader INDEX: %s' % (candidate.id, self.commitIndex))
 
   def is_leader(self):
     print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
