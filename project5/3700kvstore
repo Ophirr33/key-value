@@ -375,7 +375,7 @@ class Leader:
           print('Leader %s responded: %s' % (self.id, d))
         else:
           break
-    self.handle_timeout()
+    #self.handle_timeout()
 
   def handle_election(self, msg):
     """
