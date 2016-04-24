@@ -399,12 +399,12 @@ class Leader:
     :return: self
     """
     self.queue.append(msg)
-    while self.queue:
-      m = self.queue.pop(0)
+    for m in self.queue:
       self.quorum[len(self.log)] = set()
       self.log_message(m)
       print('%s received %s' % (self.id, msg))
       debug('sent', m['MID'], m['type'], m['src'], self.id + ' is leader')
+    self.queue = []
     return self.handle_timeout()
 
   def handle_timeout(self):
