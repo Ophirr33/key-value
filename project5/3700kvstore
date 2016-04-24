@@ -119,7 +119,7 @@ class Follower:
     if term < self.term or prevLogIndex >= len(self.log) or \
         self.log[prevLogIndex]['term'] != prevLogTerm:
       print('Term? Me: %s Leader: %s, Log Index? Me: %s Leader: %s, Log Term? Me: %s Leader: %s' %
-            (self.term, term, len(self.log), prevLogIndex, self.log[prevLogIndex]['term'], prevLogTerm))
+            (self.term, term, len(self.log), prevLogIndex, self.log[min(prevLogIndex, len(self.log) - 1)]['term'], prevLogTerm))
       d = format_json(self.id, msg['src'], self.leader, 'not ready', msg['MID'])
       d['lastAppendedIndex'] = self.commitIndex
       dump(d, self.sock)
