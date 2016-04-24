@@ -139,6 +139,7 @@ class Follower:
       msg = self.log[i]['msg']
       if 'value' in msg:
         self.data[msg['key']] = msg['value']
+        print('%s COMMITTED %s : %s' % (self.id, msg['key'], msg['value']))
       self.commitIndex = i
 
   def handle_election(self, msg):
@@ -362,14 +363,14 @@ class Leader:
       if len(self.quorum[i]) >= self.n // 2:
         del self.quorum[i]
         self.commitIndex = i
-        msg = self.log[i]['msg']
-        d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
-        if 'value' in msg:
-          self.data[msg['key']] = msg['value']
+        m = self.log[i]['msg']
+        d = format_json(self.id, m['src'], self.id, 'ok', m['MID'])
+        if 'value' in m:
+          self.data[m['key']] = m['value']
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
         elif msg['key'] in self.data:
-          d['value'] = self.data[msg['key']]
+          d['value'] = self.data[m['key']]
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
         else:
