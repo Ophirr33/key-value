@@ -119,7 +119,7 @@ class Follower:
     if term < self.term or prevLogIndex >= len(self.log) or \
         self.log[prevLogIndex]['term'] != prevLogTerm:
       print('Term? Me: %s Leader: %s, Log Index? Me: %s Leader: %s, Log Term? Me: %s Leader: %s' %
-            (self.term, term, len(self.log), prevLogIndex, self.log[min(prevLogIndex, len(self.log) - 1)]['term'], prevLogTerm))
+            (self.term, term, len(self.log), prevLogIndex, self.log[prevLogIndex]['term'], prevLogTerm))
       d = format_json(self.id, msg['src'], self.leader, 'not ready', msg['MID'])
       d['lastAppendedIndex'] = self.commitIndex
       dump(d, self.sock)
@@ -356,7 +356,6 @@ class Leader:
     Commits all messages from the log up until the end index
     :param end: the index to commit until
     """
-    temp = self.commitIndex
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
         break
@@ -373,8 +372,6 @@ class Leader:
           dump(d, self.sock)
         else:
           break
-    if temp < self.commitIndex:
-      self.handle_timeout()
 
   def handle_election(self, msg):
     """
@@ -415,7 +412,7 @@ class Leader:
       d = format_json(self.id, replica, self.id, 'heartbeat', 0)
       d['term'] = self.term
       d['prevLogIndex'] = index - 1
-      d['prevLogTerm'] = self.log[max(0, index - 1)]['term']
+      d['prevLogTerm'] = self.log[index - 1]['term']
       d['entries'] = self.log[index:] if len(self.log[index:]) <= 25 else self.log[index:index + 25]
       d['leaderCommit'] = self.commitIndex
       dump(d, self.sock)
