@@ -363,14 +363,16 @@ class Leader:
       if len(self.quorum[i]) >= self.n // 2:
         del self.quorum[i]
         self.commitIndex = i
-        msg = self.log[i]['msg']
-        d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
-        if msg['type'] == 'put':
-          self.data[msg['key']] = msg['value']
+        m = self.log[i]['msg']
+        d = format_json(self.id, m['src'], self.id, 'ok', m['MID'])
+        if m['type'] == 'put':
+          self.data[m['key']] = m['value']
           dump(d, self.sock)
-        elif msg['type'] == 'get':
-          d['value'] = self.data[msg['key']]
+          print('Leader %s responded: %s' % (self.id, d))
+        elif m['type'] == 'get':
+          d['value'] = self.data[m['key']]
           dump(d, self.sock)
+          print('Leader %s responded: %s' % (self.id, d))
         else:
           break
 
@@ -398,6 +400,7 @@ class Leader:
     """
     self.queue.append(msg)
     while self.queue:
+      print('Leader %s received: %s' % (self.id, msg))
       m = self.queue.pop(0)
       self.quorum[len(self.log)] = set()
       self.log_message(m)
