@@ -369,7 +369,8 @@ class Leader:
           self.data[msg['key']] = msg['value']
           dump(d, self.sock)
         elif msg['type'] == 'get':
-          d['value'] = self.data[msg['key']]
+          pass
+          #d['value'] = self.data[msg['key']]
           #dump(d, self.sock)
         else:
           break
