@@ -376,8 +376,8 @@ class Leader:
           print('Leader %s responded: %s' % (self.id, d))
         else:
           break
-    if self.commitIndex > temp:
-      self.handle_timeout()
+    #if self.commitIndex > temp:
+      #self.handle_timeout()
 
   def handle_election(self, msg):
     """
