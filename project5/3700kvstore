@@ -420,7 +420,7 @@ class Leader:
       d['entries'] = self.log[index:] if len(self.log[index:]) <= 25 else self.log[index:index + 25]
       d['leaderCommit'] = self.commitIndex
       dump(d, self.sock)
-    #print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
+    print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
     return self
 
   def log_message(self, msg):
