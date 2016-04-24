@@ -312,7 +312,7 @@ class Leader:
     :return: the quorum dictionary
     """
     d = {}
-    for i in range(self.commitIndex + 1, len(self.log)):
+    for i in range(self.commitIndex, len(self.log)):
       d[i] = set()
     return d
 
