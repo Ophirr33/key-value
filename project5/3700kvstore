@@ -185,7 +185,7 @@ class Follower:
     return candidate_from_follower(self)
 
   def is_leader(self):
-    print('%s: %s' % (self.id, self.data))
+    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Candidate:
@@ -279,7 +279,7 @@ class Candidate:
     dump(d, self.sock)
 
   def is_leader(self):
-    print('%s: %s' % (self.id, self.data))
+    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Leader:
@@ -303,7 +303,7 @@ class Leader:
     print('%s just became the leader' % candidate.id)
 
   def is_leader(self):
-    print('%s: %s' % (self.id, self.data))
+    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
   def init_quorum(self):
     """
