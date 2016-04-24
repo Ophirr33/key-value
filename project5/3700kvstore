@@ -370,7 +370,7 @@ class Leader:
           dump(d, self.sock)
           print('Leader %s responded: %s' % (self.id, d))
         elif m['type'] == 'get':
-          d['value'] = self.data[m['key']]
+          d['value'] = self.data[m['key']] if m['key'] in self.data else ''
           dump(d, self.sock)
           print('Leader %s responded: %s' % (self.id, d))
         else:
