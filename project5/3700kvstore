@@ -356,6 +356,7 @@ class Leader:
     Commits all messages from the log up until the end index
     :param end: the index to commit until
     """
+    temp = self.commitIndex
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
         print('COMMIT STOPPED')
@@ -375,7 +376,8 @@ class Leader:
           print('Leader %s responded: %s' % (self.id, d))
         else:
           break
-    #self.handle_timeout()
+    if self.commitIndex > temp:
+      self.handle_timeout()
 
   def handle_election(self, msg):
     """
