@@ -185,7 +185,7 @@ class Follower:
     return candidate_from_follower(self)
 
   def is_leader(self):
-    pass
+    print('%s: %s' % (self.id, self.data))
 
 
 class Candidate:
@@ -279,7 +279,7 @@ class Candidate:
     dump(d, self.sock)
 
   def is_leader(self):
-    pass
+    print('%s: %s' % (self.id, self.data))
 
 
 class Leader:
@@ -303,7 +303,7 @@ class Leader:
     print('%s just became the leader' % candidate.id)
 
   def is_leader(self):
-    print(self.log)
+    print('%s: %s' % (self.id, self.data))
 
   def init_quorum(self):
     """
@@ -449,7 +449,7 @@ started = time.time()
 
 while True:
 
-  if time.time() - started >= 28:
+  if time.time() - started >= 28 + random.random():
     shard.is_leader()
     started = time.time()
 
