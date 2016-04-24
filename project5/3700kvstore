@@ -369,9 +369,8 @@ class Leader:
           self.data[msg['key']] = msg['value']
           dump(d, self.sock)
         elif msg['type'] == 'get':
-          pass
-          #d['value'] = self.data[msg['key']]
-          #dump(d, self.sock)
+          d['value'] = self.data[msg['key']]
+          dump(d, self.sock)
         else:
           break
 
@@ -403,10 +402,6 @@ class Leader:
       self.quorum[len(self.log)] = set()
       self.log_message(m)
       debug('sent', m['MID'], m['type'], m['src'], self.id + ' is leader')
-      if m['type'] == 'get':
-        d = format_json(self.id, msg['src'], self.id, 'ok', msg['MID'])
-        d['value'] = self.data[msg['key']] if msg['key'] in self.data else ''
-        dump(d, self.sock)
     return self.handle_timeout()
 
   def handle_timeout(self):
