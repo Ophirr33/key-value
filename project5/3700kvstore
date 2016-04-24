@@ -369,7 +369,7 @@ class Leader:
           self.data[m['key']] = m['value']
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
-        elif msg['key'] in self.data:
+        elif m['key'] in self.data:
           d['value'] = self.data[m['key']]
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
