@@ -300,21 +300,21 @@ class Leader:
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.12
-    self.quorum = {}
-    self.old_commits = len(self.log)
+    self.quorum = self.init_quorum()
     print('%s just became the leader INDEX: %s' % (candidate.id, self.commitIndex))
 
   def is_leader(self):
     print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
-  def commit_old(self):
-    for i in range(self.commitIndex, self.old_commits):
-      msg = self.log[i]['msg']
-      if 'value' in msg:
-        self.data[msg['key']] = msg['value']
-        print('%s INDEX: %s COMMITTED %s : %s' % (self.id, i, msg['key'], msg['value']))
-      self.commitIndex = i
-    self.old_commits = 0
+  def init_quorum(self):
+    """
+    initializes the quorum dictionary to include all of the uncommitted log entries
+    :return: the quorum dictionary
+    """
+    d = {}
+    for i in range(self.commitIndex + 1, len(self.log)):
+      d[i] = set()
+    return d
 
   def handle_msg(self, msg):
     """
@@ -357,8 +357,6 @@ class Leader:
     Commits all messages from the log up until the end index
     :param end: the index to commit until
     """
-    if self.old_commits != 0 and end > self.old_commits:
-      self.commit_old()
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
         break
