@@ -312,7 +312,7 @@ class Leader:
     :return: the quorum dictionary
     """
     d = {}
-    for i in range(self.commitIndex, len(self.log)):
+    for i in range(self.commitIndex + 1, len(self.log)):
       d[i] = set()
     return d
 
@@ -357,7 +357,7 @@ class Leader:
     Commits all messages from the log up until the end index
     :param end: the index to commit until
     """
-    for i in range(self.commitIndex, end):
+    for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
         break
       if len(self.quorum[i]) >= self.n // 2:
