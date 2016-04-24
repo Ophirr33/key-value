@@ -216,7 +216,8 @@ class Candidate:
     """
     debug('received', msg['MID'], msg['type'], msg['src'], 'candidate')
     if msg['type'] == 'get' or msg['type'] == 'put':
-      self.queue.append(msg)
+      #self.queue.append(msg)
+      dump(format_json(self.id, msg['src'], 'FFFF', 'redirect', msg['MID']), self.sock)
       return self
     elif msg['type'] == 'election':
       return self.handle_election(msg)
