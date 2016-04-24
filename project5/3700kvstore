@@ -357,7 +357,7 @@ class Leader:
     Commits all messages from the log up until the end index
     :param end: the index to commit until
     """
-    if self.old_commits != 0:
+    if self.old_commits != 0 and end > self.old_commits:
       self.commit_old()
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
