@@ -130,6 +130,7 @@ class Follower:
     :param msg: the heartbeat
     :return: self
     """
+    self.timeout = 1
     term = int(msg['term'])
     prevLogIndex = int(msg['prevLogIndex'])
     prevLogTerm = int(msg['prevLogTerm'])
