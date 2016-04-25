@@ -473,6 +473,7 @@ class Leader:
     """
     set_last(time.time())
     if self.still_leader > 4:
+      print('%s no longer has quorum' % self.id)
       return candidate_from_leader(self, self.term + 1)
     self.still_leader += 1
     for replica, index in zip(self.replicas, self.nextIndex):
