@@ -105,7 +105,7 @@ class Follower:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.timeout = 1
-    print('%s just became a follower' % self.id)
+    print('[%s] %s just became a follower' % (time.time(), self.id))
 
   def handle_msg(self, msg):
     """
@@ -225,7 +225,7 @@ class Candidate:
     self.commitIndex = 0
     self.lastApplied = 0
     self.timeout = random.random() * 0.15 + 0.15
-    print('%s just became a candidate' % id)
+    print('[%s] %s just became a candidate' % (time.time(), id))
 
   def handle_msg(self, msg):
     """
@@ -297,7 +297,7 @@ class Candidate:
     """
     Sends out election messages to all other shards
     """
-    print('%s started an election for term %s' % (self.id, self.term))
+    print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
     d = format_json(self.id, 'FFFF', 'FFFF', 'election', 0)
     d['term'] = self.term
     lastIndex = len(self.log) - 1
@@ -332,7 +332,7 @@ class Leader:
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.12
     self.quorum = self.init_quorum()
-    print('%s just became the leader INDEX: %s LOG: %s' % (candidate.id, self.commitIndex, len(self.log)))
+    print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
 
   def is_leader(self):
