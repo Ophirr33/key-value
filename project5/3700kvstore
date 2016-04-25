@@ -43,6 +43,7 @@ def debug(sent, mid, type, src, leader):
   #print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
   #pass
 
+
 def candidate_from_follower(follower):
   """
   Constructs a Candidate from a follower
@@ -55,6 +56,22 @@ def candidate_from_follower(follower):
   candidate.data = follower.data
   candidate.commitIndex = follower.commitIndex
   candidate.lastApplied = follower.lastApplied
+  return candidate
+
+
+def candidate_from_leader(leader, term):
+  """
+  Constructs a Candidate from a leader
+  :param leader: the leader to be used
+  :param term: the term of the new candidate
+  :return: the constructed candidate
+  """
+  candidate = Candidate(leader.id, leader.replicas, leader.sock, term)
+  candidate.queue = leader.queue
+  candidate.log = leader.log
+  candidate.data = leader.data
+  candidate.commitIndex = leader.commitIndex
+  candidate.lastApplied = leader.lastApplied
   return candidate
 
 
@@ -390,9 +407,8 @@ class Leader:
     """
     term = int(msg['term'])
     if term > self.term:
-      dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'], self.id + ' is leader')
-      return Follower(self, msg['src'], term)
+      return candidate_from_leader(self, term + 1)
     else:
       debug('sent', msg['MID'], 'novote', msg['src'], self.id + ' is leader')
       return self
