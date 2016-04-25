@@ -135,7 +135,7 @@ class Follower:
     return self
 
   def commit(self, end):
-    for i in range(self.commitIndex, end + 1):
+    for i in range(self.commitIndex + 1, end + 1):
       msg = self.log[i]['msg']
       if 'value' in msg:
         self.data[msg['key']] = msg['value']
@@ -216,7 +216,6 @@ class Candidate:
     """
     debug('received', msg['MID'], msg['type'], msg['src'], 'candidate')
     if msg['type'] == 'get' or msg['type'] == 'put':
-      print('%s CANDIDATE APPENDED: %s' % (self.id, msg))
       self.queue.append(msg)
       return self
     elif msg['type'] == 'election':
