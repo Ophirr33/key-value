@@ -226,7 +226,7 @@ class Candidate:
     self.log = [{'term': term, 'msg': ''}]
     self.commitIndex = 0
     self.lastApplied = 0
-    self.continue_election = False
+    self.continue_election = 2
     self.timeout = random.random() * 0.15 + 0.15
     print('[%s] %s just became a candidate' % (time.time(), id))
 
@@ -286,14 +286,14 @@ class Candidate:
     Handles a timeout
     :return: the candidate
     """
-    if self.timeout < 0.5:
-      self.timeout = 0.5
+    if self.timeout < 0.3:
+      self.timeout = 0.3
       self.term += 1
       self.quorum = set()
-      self.continue_election = True
+      self.continue_election = 0
       self.election()
-    elif self.continue_election:
-      self.continue_election = False
+    elif self.continue_election < 2:
+      self.continue_election += 1
       self.election()
     else:
       #self.redirect_queue()
