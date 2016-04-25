@@ -339,6 +339,8 @@ class Leader:
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.1
+    self.leadership_quorum = set()
+    self.still_leader = 0
     self.quorum = self.init_quorum()
     print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
@@ -382,7 +384,7 @@ class Leader:
     if term <= self.term:
       return self
     else:
-      self.convert_to_queue()
+      #self.convert_to_queue()
       return Follower(self, msg['src'], term).handle_heartbeat(msg)
 
   def handle_response(self, msg):
@@ -392,6 +394,10 @@ class Leader:
     :param msg: the msg to handle
     :return: self
     """
+    self.leadership_quorum.add(msg['srg'])
+    if len(self.leadership_quorum) >= self.n // 2:
+      self.still_leader = 0
+      self.leadership_quorum = set()
     index = self.replicas.index(msg['src'])
     lastLogIndex = int(msg['lastAppendedIndex']) + 1
     if msg['type'] == 'not ready':
@@ -440,7 +446,7 @@ class Leader:
     term = int(msg['term'])
     if term > self.term:
       debug('sent', msg['MID'], 'vote', msg['src'], self.id + ' is leader')
-      self.convert_to_queue()
+      #self.convert_to_queue()
       return candidate_from_leader(self, term + 1)
     else:
       debug('sent', msg['MID'], 'novote', msg['src'], self.id + ' is leader')
@@ -466,6 +472,9 @@ class Leader:
     Sends a heartbeat to all other shards that contains any log updates.
     """
     set_last(time.time())
+    if self.still_leader > 4:
+      return candidate_from_leader(self, self.term + 1)
+    self.still_leader += 1
     for replica, index in zip(self.replicas, self.nextIndex):
       d = format_json(self.id, replica, self.id, 'heartbeat', 0)
       d['term'] = self.term
