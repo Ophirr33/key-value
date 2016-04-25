@@ -336,7 +336,7 @@ class Leader:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
-    self.timeout = 0.1
+    self.timeout = 0.05
     self.quorum = self.init_quorum()
     #print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
