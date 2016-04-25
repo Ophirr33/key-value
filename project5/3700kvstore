@@ -374,6 +374,7 @@ class Leader:
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
         else:
+          print('PROBLEM COMMITTING %s' % i)
           break
 
   def handle_election(self, msg):
