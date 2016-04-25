@@ -313,6 +313,7 @@ class Leader:
     """
     d = {}
     for i in range(self.commitIndex + 1, len(self.log)):
+      print('INITIALIZED QUORUM FOR %s' % i)
       d[i] = set()
     return d
 
@@ -359,10 +360,12 @@ class Leader:
     """
     for i in range(self.commitIndex + 1, end):
       if i not in self.quorum:
+        print('BROKE HERE')
         break
       if len(self.quorum[i]) >= self.n // 2:
         del self.quorum[i]
         self.commitIndex = i
+        print('LEADER COMMITTED %s' % i)
         m = self.log[i]['msg']
         d = format_json(self.id, m['src'], self.id, 'ok', m['MID'])
         if m['type'] == 'put':
