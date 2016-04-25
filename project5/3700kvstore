@@ -172,7 +172,7 @@ class Follower:
     lastTerm = int(msg['lastLogTerm'])
     if (term > self.term or (term == self.term and msg['src'] == self.leader)) \
         and (lastTerm > self.log[-1]['term'] or
-        (lastIndex > len(self.log) - 1 and lastTerm == self.log[-1]['term'])):
+        (lastIndex >= len(self.log) - 1 and lastTerm == self.log[-1]['term'])):
       self.term = term
       self.leader = msg['src']
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
@@ -268,7 +268,7 @@ class Candidate:
     lastIndex = int(msg['lastLogIndex'])
     lastTerm = int(msg['lastLogTerm'])
     if term > self.term and (lastTerm > self.log[-1]['term'] or
-        (lastIndex > len(self.log) - 1 and lastTerm == self.log[-1]['term'])):
+        (lastIndex >= len(self.log) - 1 and lastTerm == self.log[-1]['term'])):
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
       debug('sent', msg['MID'], 'vote', msg['src'], 'candidate')
       return Follower(self, msg['src'], term)
