@@ -206,7 +206,7 @@ class Follower:
     return candidate_from_follower(self)
 
   def is_leader(self):
-    #print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
+    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Candidate:
@@ -312,7 +312,7 @@ class Candidate:
       dump(format_json(self.id, m['src'], 'FFFF', 'redirect', m['MID']), self.sock)
 
   def is_leader(self):
-    #print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
+    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Leader:
@@ -337,7 +337,7 @@ class Leader:
     self.handle_timeout()
 
   def is_leader(self):
-    #print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
+    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
   def init_quorum(self):
     """
