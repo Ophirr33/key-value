@@ -105,7 +105,7 @@ class Follower:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.timeout = 1
-    print('[%s] %s just became a follower' % (time.time(), self.id))
+    #print('[%s] %s just became a follower' % (time.time(), self.id))
 
   def handle_msg(self, msg):
     """
@@ -228,7 +228,7 @@ class Candidate:
     self.lastApplied = 0
     self.continue_election = 3
     self.timeout = random.random() * 0.15 + 0.15
-    print('[%s] %s just became a candidate' % (time.time(), id))
+    #print('[%s] %s just became a candidate' % (time.time(), id))
 
   def handle_msg(self, msg):
     """
@@ -305,7 +305,7 @@ class Candidate:
     """
     Sends out election messages to all other shards
     """
-    print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
+    #print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
     d = format_json(self.id, 'FFFF', 'FFFF', 'election', 0)
     d['term'] = self.term
     lastIndex = len(self.log) - 1
@@ -342,7 +342,7 @@ class Leader:
     self.leadership_quorum = set()
     self.still_leader = 0
     self.quorum = self.init_quorum()
-    print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
+    #print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
 
   def is_leader(self):
@@ -427,11 +427,11 @@ class Leader:
         if m['type'] == 'put':
           self.data[m['key']] = m['value']
           dump(d, self.sock)
-          print('%s replied %s' % (self.id, d))
+          #print('%s replied %s' % (self.id, d))
         elif m['type'] == 'get':
           d['value'] = self.data[m['key']] if m['key'] in self.data else ''
           dump(d, self.sock)
-          print('%s replied %s' % (self.id, d))
+          #print('%s replied %s' % (self.id, d))
       else:
         #print('PROBLEM COMMITTING %s' % i)
         break
@@ -463,7 +463,7 @@ class Leader:
       m = self.queue.pop(0)
       self.quorum[len(self.log)] = set()
       self.log_message(m)
-      print('%s INDEX: %s received %s' % (self.id, len(self.log) - 1, m))
+      #print('%s INDEX: %s received %s' % (self.id, len(self.log) - 1, m))
       debug('sent', m['MID'], m['type'], m['src'], self.id + ' is leader')
     return self.handle_timeout()
 
@@ -489,7 +489,7 @@ class Leader:
 
   def convert_to_queue(self):
     for m in self.log[self.commitIndex + 1:]:
-      print('%s QUEUED %s' % (self.id, m['msg']))
+      #print('%s QUEUED %s' % (self.id, m['msg']))
       self.queue.append(m['msg'])
     self.log = self.log[:self.commitIndex + 1]
 
