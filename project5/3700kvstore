@@ -142,6 +142,7 @@ class Follower:
       d['lastAppendedIndex'] = self.commitIndex
       dump(d, self.sock)
     else:
+      self.term = term
       self.log = self.log[:prevLogIndex + 1]
       self.log += msg['entries']
       d = format_json(self.id, msg['src'], self.leader, 'ready', msg['MID'])
