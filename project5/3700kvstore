@@ -304,7 +304,7 @@ class Candidate:
     """
     Sends out election messages to all other shards
     """
-    #print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
+    print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
     d = format_json(self.id, 'FFFF', 'FFFF', 'election', 0)
     d['term'] = self.term
     lastIndex = len(self.log) - 1
