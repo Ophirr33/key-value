@@ -105,7 +105,7 @@ class Follower:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.timeout = 1
-    #print('[%s] %s just became a follower' % (time.time(), self.id))
+    print('[%s] %s just became a follower' % (time.time(), self.id))
 
   def handle_msg(self, msg):
     """
@@ -228,7 +228,7 @@ class Candidate:
     self.lastApplied = 0
     self.continue_election = False
     self.timeout = random.random() * 0.15 + 0.15
-    #print('[%s] %s just became a candidate' % (time.time(), id))
+    print('[%s] %s just became a candidate' % (time.time(), id))
 
   def handle_msg(self, msg):
     """
@@ -339,7 +339,7 @@ class Leader:
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.08
     self.quorum = self.init_quorum()
-    #print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
+    print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
 
   def is_leader(self):
