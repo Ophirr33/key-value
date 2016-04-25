@@ -482,7 +482,7 @@ started = time.time()
 while True:
 
   if time.time() - started >= 28 + random.random():
-    shard.is_leader()
+    #shard.is_leader()
     started = time.time()
 
   ready = select.select([shard.sock], [], [], 0.01)[0]
