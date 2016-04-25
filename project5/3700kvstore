@@ -446,7 +446,7 @@ class Leader:
     for replica, index in zip(self.replicas, self.nextIndex):
       d = format_json(self.id, replica, self.id, 'heartbeat', 0)
       d['term'] = self.term
-      d['prevLogIndex'] = min(index - 1, len(self.log))
+      d['prevLogIndex'] = min(index - 1, len(self.log) - 1)
       d['prevLogTerm'] = self.log[d['prevLogIndex']]['term']
       d['entries'] = self.log[index:] if len(self.log[index:]) <= 25 else self.log[index:index + 25]
       d['leaderCommit'] = self.commitIndex
