@@ -365,12 +365,12 @@ class Leader:
         self.commitIndex = i
         m = self.log[i]['msg']
         d = format_json(self.id, m['src'], self.id, 'ok', m['MID'])
-        if 'value' in m:
+        if m['type'] == 'put':
           self.data[m['key']] = m['value']
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
-        elif m['key'] in self.data:
-          d['value'] = self.data[m['key']]
+        elif m['type'] == 'get':
+          d['value'] = self.data[m['key']] if m['key'] in self.data else ''
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
         else:
