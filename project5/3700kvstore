@@ -104,7 +104,7 @@ class Follower:
     self.log = candidate.log
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
-    self.timeout = 1
+    self.timeout = 0.5
     print('%s just became a follower' % self.id)
 
   def handle_msg(self, msg):
@@ -130,7 +130,7 @@ class Follower:
     :param msg: the heartbeat
     :return: self
     """
-    self.timeout = 1
+    self.timeout = 0.5
     term = int(msg['term'])
     prevLogIndex = int(msg['prevLogIndex'])
     prevLogTerm = int(msg['prevLogTerm'])
@@ -280,8 +280,8 @@ class Candidate:
     Handles a timeout
     :return: the candidate
     """
-    if self.timeout < 1:
-      self.timeout = 1
+    if self.timeout < 0.5:
+      self.timeout = 0.5
       self.term += 1
       self.election()
     else:
