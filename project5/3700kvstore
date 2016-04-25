@@ -377,9 +377,9 @@ class Leader:
           d['value'] = self.data[m['key']] if m['key'] in self.data else ''
           dump(d, self.sock)
           print('%s replied %s' % (self.id, d))
-        else:
-          print('PROBLEM COMMITTING %s' % i)
-          break
+      else:
+        print('PROBLEM COMMITTING %s' % i)
+        break
 
   def handle_election(self, msg):
     """
