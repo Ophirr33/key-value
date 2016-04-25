@@ -482,6 +482,7 @@ started = time.time()
 while True:
 
   if time.time() - started >= 28 + random.random():
+    print('%s Log Length: %s !!!!!!!!!!!!' % (shard.id, len(shard.log)))
     #shard.is_leader()
     started = time.time()
 
