@@ -300,7 +300,7 @@ class Candidate:
   def redirect_queue(self):
     while self.queue:
       m = self.queue.pop(0)
-      dump(format_json(self.id, m['src'], 'FFFF', 'redirect', m['MID']))
+      dump(format_json(self.id, m['src'], 'FFFF', 'redirect', m['MID']), self.sock)
 
   def is_leader(self):
     print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
