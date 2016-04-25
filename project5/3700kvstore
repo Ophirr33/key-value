@@ -104,7 +104,7 @@ class Follower:
     self.log = candidate.log
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
-    self.timeout = 0.5
+    self.timeout = 1
     print('%s just became a follower' % self.id)
 
   def handle_msg(self, msg):
@@ -130,7 +130,7 @@ class Follower:
     :param msg: the heartbeat
     :return: self
     """
-    self.timeout = 0.5
+    self.timeout = 1
     term = int(msg['term'])
     prevLogIndex = int(msg['prevLogIndex'])
     prevLogTerm = int(msg['prevLogTerm'])
@@ -223,7 +223,7 @@ class Candidate:
     self.log = [{'term': term, 'msg': ''}]
     self.commitIndex = 0
     self.lastApplied = 0
-    self.timeout = random.random() * 0.15 + 0.15
+    self.timeout = random.random() * 0.25 + 0.05
     print('%s just became a candidate' % id)
 
   def handle_msg(self, msg):
@@ -280,13 +280,13 @@ class Candidate:
     Handles a timeout
     :return: the candidate
     """
-    if self.timeout < 0.5:
-      self.timeout = 0.5
+    if self.timeout < 1:
+      self.timeout = 1
       self.term += 1
       self.election()
     else:
       #self.redirect_queue()
-      self.timeout = random.random() * 0.15 + 0.15
+      self.timeout = random.random() * 0.25 + 0.05
     return self
 
   def election(self):
@@ -475,7 +475,7 @@ sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
 sock.connect(my_id)
 
 shard = Follower(Candidate(my_id, replica_ids, sock, 0), 'FFFF', 0)
-shard.timeout = random.random() * 0.15 + 0.15
+shard.timeout = random.random() * 0.25 + 0.05
 time.sleep(0.1)
 
 started = time.time()
