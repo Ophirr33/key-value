@@ -286,8 +286,8 @@ class Candidate:
     Handles a timeout
     :return: the candidate
     """
-    if self.timeout < 0.3:
-      self.timeout = 0.3
+    if self.timeout < 0.4:
+      self.timeout = 0.4
       self.term += 1
       self.quorum = set()
       self.continue_election = 0
