@@ -293,6 +293,7 @@ class Candidate:
       self.election()
     elif self.continue_election:
       self.continue_election = False
+      self.election()
     else:
       #self.redirect_queue()
       self.timeout = random.random() * 0.15 + 0.15
