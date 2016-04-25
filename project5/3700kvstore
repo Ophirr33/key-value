@@ -121,7 +121,7 @@ class Follower:
       return self.handle_client(msg)
     elif msg['type'] == 'election':
       return self.handle_election(msg)
-    elif msg['type'] == 'heartbeat' and msg['src'] == self.leader:
+    elif msg['type'] == 'heartbeat' and (msg['src'] == self.leader or int(msg['term']) >= self.term):
       return self.handle_heartbeat(msg)
     else:
       return self
