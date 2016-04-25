@@ -473,7 +473,8 @@ replica_ids = sys.argv[2:]
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
 sock.connect(my_id)
 
-shard = Candidate(my_id, replica_ids, sock, 0)
+shard = Follower(Candidate(my_id, replica_ids, sock, 0), 'FFFF', 0)
+shard.timeout = random.random() * 0.15 + 0.15
 time.sleep(0.1)
 
 started = time.time()
