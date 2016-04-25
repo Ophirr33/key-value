@@ -216,6 +216,7 @@ class Candidate:
     """
     debug('received', msg['MID'], msg['type'], msg['src'], 'candidate')
     if msg['type'] == 'get' or msg['type'] == 'put':
+      print('%s CANDIDATE APPENDED: %s' % (self.id, msg))
       self.queue.append(msg)
       return self
     elif msg['type'] == 'election':
