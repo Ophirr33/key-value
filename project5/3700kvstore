@@ -2,6 +2,7 @@
 
 import sys, socket, select, time, json, random
 
+
 LAST = 0
 
 
@@ -29,19 +30,6 @@ def set_last(x):
   """
   global LAST
   LAST = x
-
-
-def debug(sent, mid, type, src, leader):
-  """
-  A debug print message
-  :param sent: whether this message was sent or received
-  :param mid: the message id to use
-  :param type: the type of message
-  :param src: where this message came from
-  :param leader: the leader's id
-  """
-  #print('[%s] %s msg: %s with type: %s for %s. Leader: %s' % (sys.argv[1], sent, mid, type, src, leader))
-  #pass
 
 
 def candidate_from_follower(follower):
@@ -105,7 +93,6 @@ class Follower:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.timeout = 1
-    #print('[%s] %s just became a follower' % (time.time(), self.id))
 
   def handle_msg(self, msg):
     """
@@ -116,7 +103,6 @@ class Follower:
     self.timeout = 1
     if msg['src'] == self.leader:
       set_last(time.time())
-    debug('received', msg['MID'], msg['type'], msg['src'], self.leader)
     if msg['type'] == 'get' or msg['type'] == 'put':
       return self.handle_client(msg)
     elif msg['type'] == 'election':
@@ -137,8 +123,6 @@ class Follower:
     prevLogTerm = int(msg['prevLogTerm'])
     if term < self.term or prevLogIndex >= len(self.log) or \
         self.log[prevLogIndex]['term'] > prevLogTerm:
-      #print('Term? Me: %s Leader: %s, Log Index? Me: %s Leader: %s, Log Term? Me: %s Leader: %s' %
-      #      (self.term, term, len(self.log), prevLogIndex, self.log[min(prevLogIndex, len(self.log) - 1)]['term'], prevLogTerm))
       d = format_json(self.id, msg['src'], self.leader, 'not ready', msg['MID'])
       d['lastAppendedIndex'] = self.commitIndex
       dump(d, self.sock)
@@ -156,11 +140,14 @@ class Follower:
     return self
 
   def commit(self, end):
+    """
+    commits the log up to the given end
+    :param end: the last index to be committed
+    """
     for i in range(self.commitIndex + 1, end + 1):
       msg = self.log[i]['msg']
       if 'value' in msg:
         self.data[msg['key']] = msg['value']
-        #print('%s INDEX: %s COMMITTED %s : %s' % (self.id, i, msg['key'], msg['value']))
       self.commitIndex = i
 
   def handle_election(self, msg):
@@ -178,11 +165,7 @@ class Follower:
       self.term = term
       self.leader = msg['src']
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
-      debug('sent', msg['MID'], 'vote', msg['src'], self.leader)
-      return self
-    else:
-      debug('sent', msg['MID'], 'novote', msg['src'], self.leader)
-      return self
+    return self
 
   def handle_client(self, msg):
     """
@@ -196,7 +179,6 @@ class Follower:
       src = msg['src']
       mid = msg['MID']
       dump(format_json(self.id, src, self.leader, 'redirect', mid), self.sock)
-      debug('sent', mid, 'redirect', src, self.leader)
     return self
 
   def handle_timeout(self):
@@ -205,9 +187,6 @@ class Follower:
     :return:
     """
     return candidate_from_follower(self)
-
-  def is_leader(self):
-    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Candidate:
@@ -228,7 +207,6 @@ class Candidate:
     self.lastApplied = 0
     self.continue_election = 3
     self.timeout = random.random() * 0.15 + 0.15
-    #print('[%s] %s just became a candidate' % (time.time(), id))
 
   def handle_msg(self, msg):
     """
@@ -236,7 +214,6 @@ class Candidate:
     :param msg: the message
     :return: the resulting candidate, follower, or leader
     """
-    debug('received', msg['MID'], msg['type'], msg['src'], 'candidate')
     if msg['type'] == 'get' or msg['type'] == 'put':
       self.queue.append(msg)
       return self
@@ -273,13 +250,9 @@ class Candidate:
     if term >= self.term and (lastTerm > self.log[-1]['term'] or
         (lastIndex >= len(self.log) - 1 and lastTerm == self.log[-1]['term'])):
       dump(format_json(self.id, msg['src'], msg['src'], 'vote', msg['MID']), self.sock)
-      debug('sent', msg['MID'], 'vote', msg['src'], 'candidate')
       return Follower(self, msg['src'], term)
     else:
       self.term = max(self.term, term)
-      #print('%s novote for %s: Terms: %s, %s Last Terms: %s, %s Last Indices: %s, %s' %
-      #      (self.id, msg['src'], self.term, term, self.log[-1]['term'], lastTerm, len(self.log) - 1, lastIndex))
-      debug('sent', msg['MID'], 'novote', msg['src'], 'candidate')
       return self
 
   def handle_timeout(self):
@@ -305,7 +278,6 @@ class Candidate:
     """
     Sends out election messages to all other shards
     """
-    #print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
     d = format_json(self.id, 'FFFF', 'FFFF', 'election', 0)
     d['term'] = self.term
     lastIndex = len(self.log) - 1
@@ -314,12 +286,12 @@ class Candidate:
     dump(d, self.sock)
 
   def redirect_queue(self):
+    """
+    redirects this candidate's queue because a new election is starting
+    """
     while self.queue:
       m = self.queue.pop(0)
       dump(format_json(self.id, m['src'], 'FFFF', 'redirect', m['MID']), self.sock)
-
-  def is_leader(self):
-    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Leader:
@@ -342,11 +314,7 @@ class Leader:
     self.leadership_quorum = set()
     self.still_leader = 0
     self.quorum = self.init_quorum()
-    #print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
-
-  def is_leader(self):
-    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
   def init_quorum(self):
     """
@@ -355,9 +323,7 @@ class Leader:
     """
     d = {}
     for i in range(self.commitIndex + 1, len(self.log)):
-      #print('INITIALIZED QUORUM FOR %s' % i)
       d[i] = set()
-    #print('COMMIT INDEX: %s' % self.commitIndex)
     return d
 
   def handle_msg(self, msg):
@@ -366,7 +332,6 @@ class Leader:
     :param msg: the message to handle
     :return: the corresponding shard
     """
-    debug('received', msg['MID'], msg['type'], msg['src'], self.id)
     type = msg['type']
     if type == 'get' or type == 'put':
       return self.handle_client(msg)
@@ -380,11 +345,15 @@ class Leader:
       return self
 
   def handle_heartbeat(self, msg):
+    """
+    handles a heartbeat message from another leader
+    :param msg: the heartbeat message to be dealt with
+    :return: either the leader or a follower if this leader is less qualified
+    """
     term = int(msg['term'])
     if term <= self.term:
       return self
     else:
-      #self.convert_to_queue()
       return Follower(self, msg['src'], term).handle_heartbeat(msg)
 
   def handle_response(self, msg):
@@ -420,20 +389,16 @@ class Leader:
         break
       if len(self.quorum[i]) >= self.n // 2:
         del self.quorum[i]
-        #print('%s LEADER COMMITTED %s, OLD: %s' % (self.id, i, self.commitIndex))
         self.commitIndex = i
         m = self.log[i]['msg']
         d = format_json(self.id, m['src'], self.id, 'ok', m['MID'])
         if m['type'] == 'put':
           self.data[m['key']] = m['value']
           dump(d, self.sock)
-          #print('%s replied %s' % (self.id, d))
         elif m['type'] == 'get':
           d['value'] = self.data[m['key']] if m['key'] in self.data else ''
           dump(d, self.sock)
-          #print('%s replied %s' % (self.id, d))
       else:
-        #print('PROBLEM COMMITTING %s' % i)
         break
 
   def handle_election(self, msg):
@@ -445,11 +410,8 @@ class Leader:
     """
     term = int(msg['term'])
     if term > self.term:
-      debug('sent', msg['MID'], 'vote', msg['src'], self.id + ' is leader')
-      #self.convert_to_queue()
       return candidate_from_leader(self, term + 1)
     else:
-      debug('sent', msg['MID'], 'novote', msg['src'], self.id + ' is leader')
       return self
 
   def handle_client(self, msg):
@@ -463,8 +425,6 @@ class Leader:
       m = self.queue.pop(0)
       self.quorum[len(self.log)] = set()
       self.log_message(m)
-      #print('%s INDEX: %s received %s' % (self.id, len(self.log) - 1, m))
-      debug('sent', m['MID'], m['type'], m['src'], self.id + ' is leader')
     return self.handle_timeout()
 
   def handle_timeout(self):
@@ -473,7 +433,6 @@ class Leader:
     """
     set_last(time.time())
     if self.still_leader > 9:
-      print('%s no longer has quorum' % self.id)
       return candidate_from_leader(self, self.term + 1)
     self.still_leader += 1
     for replica, index in zip(self.replicas, self.nextIndex):
@@ -484,14 +443,7 @@ class Leader:
       d['entries'] = self.log[index:] if len(self.log[index:]) <= 25 else self.log[index:index + 25]
       d['leaderCommit'] = self.commitIndex
       dump(d, self.sock)
-    #print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
     return self
-
-  def convert_to_queue(self):
-    for m in self.log[self.commitIndex + 1:]:
-      #print('%s QUEUED %s' % (self.id, m['msg']))
-      self.queue.append(m['msg'])
-    self.log = self.log[:self.commitIndex + 1]
 
   def log_message(self, msg):
     """
@@ -517,14 +469,8 @@ shard = Follower(Candidate(my_id, replica_ids, sock, 0), 'FFFF', 0)
 shard.timeout = random.random() * 0.15 + 0.15
 time.sleep(0.1)
 
-started = time.time()
 
 while True:
-
-  if time.time() - started >= 28 + random.random():
-    #print('%s Committed: %s Log Length: %s !!!!!!!!!!!!' % (shard.id, shard.commitIndex, len(shard.log)))
-    #shard.is_leader()
-    started = time.time()
 
   ready = select.select([shard.sock], [], [], 0.01)[0]
 
