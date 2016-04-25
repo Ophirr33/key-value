@@ -235,6 +235,8 @@ class Candidate:
     if msg['type'] == 'get' or msg['type'] == 'put':
       self.queue.append(msg)
       return self
+    elif type == 'heartbeat' and msg['term'] >= self.term:
+      return Follower(self, msg['src'], msg['term'])
     elif msg['type'] == 'election':
       return self.handle_election(msg)
     elif msg['type'] == 'vote':
