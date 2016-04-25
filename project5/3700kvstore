@@ -404,7 +404,7 @@ class Leader:
       m = self.queue.pop(0)
       self.quorum[len(self.log)] = set()
       self.log_message(m)
-      print('%s INDEX: %s received %s' % (self.id, len(self.log) - 1, msg))
+      print('%s INDEX: %s received %s' % (self.id, len(self.log) - 1, m))
       debug('sent', m['MID'], m['type'], m['src'], self.id + ' is leader')
     return self.handle_timeout()
 
