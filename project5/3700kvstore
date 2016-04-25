@@ -375,6 +375,7 @@ class Leader:
     if term <= self.term:
       return self
     else:
+      self.convert_to_queue()
       return Follower(self, msg['src'], term)
 
   def handle_response(self, msg):
@@ -432,6 +433,7 @@ class Leader:
     term = int(msg['term'])
     if term > self.term:
       debug('sent', msg['MID'], 'vote', msg['src'], self.id + ' is leader')
+      self.convert_to_queue()
       return candidate_from_leader(self, term + 1)
     else:
       debug('sent', msg['MID'], 'novote', msg['src'], self.id + ' is leader')
@@ -467,6 +469,11 @@ class Leader:
       dump(d, self.sock)
     print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
     return self
+
+  def convert_to_queue(self):
+    for m in self.log[self.commitIndex + 1:]:
+      self.queue.append(m['msg'])
+    self.log = self.log[:self.commitIndex + 1]
 
   def log_message(self, msg):
     """
