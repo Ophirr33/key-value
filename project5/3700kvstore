@@ -472,7 +472,7 @@ class Leader:
     Sends a heartbeat to all other shards that contains any log updates.
     """
     set_last(time.time())
-    if self.still_leader > 4:
+    if self.still_leader > 9:
       print('%s no longer has quorum' % self.id)
       return candidate_from_leader(self, self.term + 1)
     self.still_leader += 1
