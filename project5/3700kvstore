@@ -282,6 +282,7 @@ class Candidate:
       self.term += 1
       self.election()
     else:
+      self.redirect_queue()
       self.timeout = random.random() * 0.15 + 0.15
     return self
 
@@ -295,6 +296,11 @@ class Candidate:
     d['lastLogIndex'] = lastIndex
     d['lastLogTerm'] = self.log[lastIndex]['term']
     dump(d, self.sock)
+
+  def redirect_queue(self):
+    while self.queue:
+      m = self.queue.pop(0)
+      dump(format_json(self.id, m['src'], 'FFFF', 'redirect', m['MID']))
 
   def is_leader(self):
     print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
