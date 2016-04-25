@@ -394,7 +394,7 @@ class Leader:
     :param msg: the msg to handle
     :return: self
     """
-    self.leadership_quorum.add(msg['srg'])
+    self.leadership_quorum.add(msg['src'])
     if len(self.leadership_quorum) >= self.n // 2:
       self.still_leader = 0
       self.leadership_quorum = set()
