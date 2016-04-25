@@ -113,13 +113,14 @@ class Follower:
     :param msg: the message to handle
     :return: the new shard object
     """
+    if msg['src'] == self.leader:
+      set_last(time.time())
     debug('received', msg['MID'], msg['type'], msg['src'], self.leader)
     if msg['type'] == 'get' or msg['type'] == 'put':
       return self.handle_client(msg)
     elif msg['type'] == 'election':
       return self.handle_election(msg)
     elif msg['type'] == 'heartbeat' and msg['src'] == self.leader:
-      set_last(time.time())
       return self.handle_heartbeat(msg)
     else:
       return self
@@ -336,7 +337,7 @@ class Leader:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
-    self.timeout = 0.05
+    self.timeout = 0.08
     self.quorum = self.init_quorum()
     #print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
