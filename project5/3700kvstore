@@ -282,7 +282,7 @@ class Candidate:
       self.term += 1
       self.election()
     else:
-      self.redirect_queue()
+      #self.redirect_queue()
       self.timeout = random.random() * 0.15 + 0.15
     return self
 
