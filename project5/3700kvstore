@@ -241,7 +241,7 @@ class Candidate:
       self.queue.append(msg)
       return self
     elif type == 'heartbeat' and msg['term'] >= self.term:
-      return Follower(self, msg['src'], msg['term'])
+      return Follower(self, msg['src'], msg['term']).handle_heartbeat(msg)
     elif msg['type'] == 'election':
       return self.handle_election(msg)
     elif msg['type'] == 'vote':
@@ -383,7 +383,7 @@ class Leader:
       return self
     else:
       self.convert_to_queue()
-      return Follower(self, msg['src'], term)
+      return Follower(self, msg['src'], term).handle_heartbeat(msg)
 
   def handle_response(self, msg):
     """
