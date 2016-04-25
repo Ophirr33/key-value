@@ -105,7 +105,7 @@ class Follower:
     self.commitIndex = candidate.commitIndex
     self.lastApplied = candidate.lastApplied
     self.timeout = 1
-    print('[%s] %s just became a follower' % (time.time(), self.id))
+    #print('[%s] %s just became a follower' % (time.time(), self.id))
 
   def handle_msg(self, msg):
     """
@@ -206,7 +206,7 @@ class Follower:
     return candidate_from_follower(self)
 
   def is_leader(self):
-    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
+    #print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Candidate:
@@ -226,7 +226,7 @@ class Candidate:
     self.commitIndex = 0
     self.lastApplied = 0
     self.timeout = random.random() * 0.15 + 0.15
-    print('[%s] %s just became a candidate' % (time.time(), id))
+    #print('[%s] %s just became a candidate' % (time.time(), id))
 
   def handle_msg(self, msg):
     """
@@ -274,8 +274,8 @@ class Candidate:
       debug('sent', msg['MID'], 'vote', msg['src'], 'candidate')
       return Follower(self, msg['src'], term)
     else:
-      print('%s novote for %s: Terms: %s, %s Last Terms: %s, %s Last Indices: %s, %s' %
-            (self.id, msg['src'], self.term, term, self.log[-1]['term'], lastTerm, len(self.log) - 1, lastIndex))
+      #print('%s novote for %s: Terms: %s, %s Last Terms: %s, %s Last Indices: %s, %s' %
+      #      (self.id, msg['src'], self.term, term, self.log[-1]['term'], lastTerm, len(self.log) - 1, lastIndex))
       debug('sent', msg['MID'], 'novote', msg['src'], 'candidate')
       return self
 
@@ -298,7 +298,7 @@ class Candidate:
     """
     Sends out election messages to all other shards
     """
-    print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
+    #print('[%s] %s started an election for term %s' % (time.time(), self.id, self.term))
     d = format_json(self.id, 'FFFF', 'FFFF', 'election', 0)
     d['term'] = self.term
     lastIndex = len(self.log) - 1
@@ -312,7 +312,7 @@ class Candidate:
       dump(format_json(self.id, m['src'], 'FFFF', 'redirect', m['MID']), self.sock)
 
   def is_leader(self):
-    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
+    #print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
 
 class Leader:
@@ -333,11 +333,11 @@ class Leader:
     self.nextIndex = [len(candidate.log) for x in candidate.replicas]
     self.timeout = 0.12
     self.quorum = self.init_quorum()
-    print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
+    #print('[%s] %s just became the leader INDEX: %s LOG: %s' % (time.time(), self.id, self.commitIndex, len(self.log)))
     self.handle_timeout()
 
   def is_leader(self):
-    print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
+    #print('%s: Data: %s Log: %s' % (self.id, self.data, self.log))
 
   def init_quorum(self):
     """
@@ -467,7 +467,7 @@ class Leader:
       d['entries'] = self.log[index:] if len(self.log[index:]) <= 25 else self.log[index:index + 25]
       d['leaderCommit'] = self.commitIndex
       dump(d, self.sock)
-    print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
+    #print('%s Commit Index: %s Rest of Log: %s' % (self.id, self.commitIndex, len(self.log[self.commitIndex + 1:])))
     return self
 
   def convert_to_queue(self):
@@ -504,7 +504,7 @@ started = time.time()
 while True:
 
   if time.time() - started >= 28 + random.random():
-    print('%s Committed: %s Log Length: %s !!!!!!!!!!!!' % (shard.id, shard.commitIndex, len(shard.log)))
+    #print('%s Committed: %s Log Length: %s !!!!!!!!!!!!' % (shard.id, shard.commitIndex, len(shard.log)))
     #shard.is_leader()
     started = time.time()
 
