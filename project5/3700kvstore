@@ -276,6 +276,7 @@ class Candidate:
       debug('sent', msg['MID'], 'vote', msg['src'], 'candidate')
       return Follower(self, msg['src'], term)
     else:
+      self.term = max(self.term, term)
       #print('%s novote for %s: Terms: %s, %s Last Terms: %s, %s Last Indices: %s, %s' %
       #      (self.id, msg['src'], self.term, term, self.log[-1]['term'], lastTerm, len(self.log) - 1, lastIndex))
       debug('sent', msg['MID'], 'novote', msg['src'], 'candidate')
