@@ -292,6 +292,7 @@ class Candidate:
       self.continue_election = True
       self.election()
     elif self.continue_election:
+      print('continuing election')
       self.continue_election = False
     else:
       #self.redirect_queue()
