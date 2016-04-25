@@ -143,6 +143,7 @@ class Follower:
       dump(d, self.sock)
     else:
       self.term = term
+      self.leader = msg['src']
       self.log = self.log[:prevLogIndex + 1]
       self.log += msg['entries']
       d = format_json(self.id, msg['src'], self.leader, 'ready', msg['MID'])
@@ -360,12 +361,21 @@ class Leader:
     type = msg['type']
     if type == 'get' or type == 'put':
       return self.handle_client(msg)
+    elif type == 'heartbeat':
+      return self.handle_heartbeat(msg)
     elif type == 'ready' or type == 'not ready':
       return self.handle_response(msg)
     elif type == 'election':
       return self.handle_election(msg)
     else:
       return self
+
+  def handle_heartbeat(self, msg):
+    term = int(msg['term'])
+    if term <= self.term:
+      return self
+    else:
+      return Follower(self, msg['src'], term)
 
   def handle_response(self, msg):
     """
