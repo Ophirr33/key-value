@@ -347,7 +347,7 @@ class Leader:
     if msg['type'] == 'not ready':
       self.nextIndex[index] = lastLogIndex
     else:
-      for i in range(self.nextIndex[index], lastLogIndex):
+      for i in range(self.commitIndex, lastLogIndex):
         if i in self.quorum:
           self.quorum[i].add(msg['src'])
       self.commit(lastLogIndex)
